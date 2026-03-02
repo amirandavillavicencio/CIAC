@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Reporte CIAC</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<h2>Reporte</h2>
+<button onclick="cargar()">Actualizar</button>
+<table border="1">
+<thead>
+<tr>
+<th>Fecha</th>
+<th>Código</th>
+<th>Tutor</th>
+<th>Alumno</th>
+</tr>
+</thead>
+<tbody id="rows"></tbody>
+</table>
+
+<script>
+const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function cargar() {
+rows.innerHTML = "";
+
+const { data } = await db
+.from("asistencias_v2")
+.select("correo_alumno, created_at, sesiones:sesion_id (codigo6, tutor_correo)");
+
+for (let r of data) {
+rows.innerHTML += `
+<tr>
+<td>${new Date(r.created_at).toLocaleString()}</td>
+<td>${r.sesiones.codigo6}</td>
+<td>${r.sesiones.tutor_correo}</td>
+<td>${r.correo_alumno}</td>
+</tr>`;
+}
+}
+
+cargar();
+</script>
+</body>
+</html>
