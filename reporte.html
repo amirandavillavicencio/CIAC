@@ -1,51 +1,152 @@
 <!doctype html>
-<html>
+<html lang="es">
 <head>
-<meta charset="utf-8">
-<title>Reporte CIAC</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CIAC Check-In · Reporte</title>
+<link rel="icon" href="data:,">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+<style>
+:root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; --muted:#6b7280; --line:#e5e7eb; }
+body{ margin:0; font-family:Arial, sans-serif; background:var(--bg); color:#111827; }
+.topbar{ background:var(--blue); color:#fff; padding:16px 22px; display:flex; align-items:center; justify-content:space-between; }
+.brand{ font-weight:800; }
+.wrap{ max-width:980px; margin:22px auto; padding:0 14px; }
+.card{ background:#fff; border-radius:14px; box-shadow:0 8px 20px rgba(0,0,0,.08); border:1px solid var(--line); padding:16px; }
+h1{ margin:0 0 10px; font-size:20px; }
+.muted{ color:var(--muted); font-size:12px; }
+.bar{ display:flex; gap:10px; flex-wrap:wrap; margin:12px 0; }
+input{ padding:10px; border:1px solid #d1d5db; border-radius:10px; }
+.btn{ padding:10px 12px; border:0; border-radius:10px; cursor:pointer; font-weight:800; background:var(--blue); color:#fff; }
+table{ width:100%; border-collapse:collapse; margin-top:8px; }
+th,td{ padding:10px; border-bottom:1px solid var(--line); text-align:left; font-size:13px; }
+th{ font-size:12px; text-transform:uppercase; letter-spacing:.4px; }
+.footer{ text-align:center; color:var(--muted); font-size:12px; margin:14px 0 30px; }
+
+/* Lock */
+.lock{ position:fixed; inset:0; background:rgba(17,24,39,.55); display:flex; align-items:center; justify-content:center; }
+.lockCard{ width:420px; background:#fff; border-radius:14px; padding:20px; box-shadow:0 12px 30px rgba(0,0,0,.25); }
+.lockTitle{ font-weight:900; font-size:16px; margin-bottom:6px; }
+.lockHint{ font-size:12px; color:var(--muted); margin-bottom:12px; }
+.lockRow{ display:flex; gap:10px; }
+.lockMsg{ margin-top:10px; font-size:12px; min-height:16px; }
+</style>
 </head>
+
 <body>
 
-<h2>Reporte</h2>
-<button onclick="cargar()">Actualizar</button>
-<table border="1">
+<div class="topbar">
+<div class="brand">CIAC Check-In · Reporte</div>
+<a href="index.html" style="color:#fff; text-decoration:none; font-weight:800;">🏠 Inicio</a>
+</div>
+
+<div class="wrap">
+<div class="card" id="app" style="display:none;">
+<h1>Reporte de Asistencia</h1>
+<div class="muted" id="status">Cargando…</div>
+
+<div class="bar">
+<input id="qTutor" placeholder="Filtrar tutor">
+<input id="qCode" placeholder="Filtrar código">
+<button class="btn" id="btnFiltrar">Filtrar</button>
+</div>
+
+<table>
 <thead>
 <tr>
 <th>Fecha</th>
 <th>Código</th>
 <th>Tutor</th>
+<th>Campus</th>
+<th>Sala</th>
+<th>Tipo</th>
 <th>Alumno</th>
 </tr>
 </thead>
 <tbody id="rows"></tbody>
 </table>
+</div>
+
+<div class="footer">© Universidad Técnica Federico Santa María · CIAC</div>
+</div>
+
+<!-- LOCK SCREEN -->
+<div class="lock" id="lock">
+<div class="lockCard">
+<div class="lockTitle">Acceso restringido</div>
+<p class="lockHint">Ingresa la clave para visualizar el reporte.</p>
+<div class="lockRow">
+<input id="pass" type="password" placeholder="Clave del reporte" />
+<button class="btn" id="btnEnter">Entrar</button>
+</div>
+<div class="lockMsg" id="lockMsg"></div>
+</div>
+</div>
 
 <script>
+const REPORT_PASSWORD = "CIAC#R3p0rt3_2026!VtC-9qLx";
+
 const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-async function cargar() {
-rows.innerHTML = "";
+const lock = document.getElementById("lock");
+const app = document.getElementById("app");
+const lockMsg = document.getElementById("lockMsg");
+const passEl = document.getElementById("pass");
 
-const { data } = await db
+function unlock(){
+lock.style.display="none";
+app.style.display="block";
+cargar();
+}
+
+if(localStorage.getItem("ciac_report_ok")==="1") unlock();
+
+document.getElementById("btnEnter").onclick = ()=>{
+if(passEl.value === REPORT_PASSWORD){
+localStorage.setItem("ciac_report_ok","1");
+unlock();
+}else{
+lockMsg.style.color="crimson";
+lockMsg.innerText="Clave incorrecta.";
+}
+};
+
+async function cargar(){
+document.getElementById("status").innerText="Cargando…";
+rows.innerHTML="";
+
+const { data, error } = await db
 .from("asistencias_v2")
-.select("correo_alumno, created_at, sesiones:sesion_id (codigo6, tutor_correo)");
+.select("correo_alumno, created_at, sesiones:sesion_id (codigo6, tutor_correo, campus, sala, tipo)")
+.order("created_at",{ascending:false});
 
-for (let r of data) {
-rows.innerHTML += `
+if(error){
+document.getElementById("status").innerText="Error: "+error.message;
+return;
+}
+
+for(let r of data){
+rows.innerHTML+=`
 <tr>
 <td>${new Date(r.created_at).toLocaleString()}</td>
-<td>${r.sesiones.codigo6}</td>
-<td>${r.sesiones.tutor_correo}</td>
+<td>${r.sesiones?.codigo6||""}</td>
+<td>${r.sesiones?.tutor_correo||""}</td>
+<td>${r.sesiones?.campus||""}</td>
+<td>${r.sesiones?.sala||""}</td>
+<td>${r.sesiones?.tipo||""}</td>
 <td>${r.correo_alumno}</td>
 </tr>`;
 }
+
+document.getElementById("status").innerText="Registros cargados.";
 }
 
-cargar();
+document.getElementById("btnFiltrar").onclick=cargar;
 </script>
+
 </body>
 </html>
