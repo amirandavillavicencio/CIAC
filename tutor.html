@@ -16,18 +16,15 @@
     .brand{ font-weight:700; letter-spacing:.3px; }
     .wrap{ max-width:420px; margin:22px auto; padding:0 14px; }
     .card{ background:var(--card); border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,.08); padding:18px; }
-    h1{ font-size:20px; margin:0 0 10px; }
-    .crumb{ font-size:12px; color:var(--muted); margin-bottom:14px; }
     label{ display:block; font-size:12px; color:var(--muted); margin:10px 0 6px; }
     select,input{ width:100%; padding:10px; border:1px solid #d1d5db; border-radius:8px; box-sizing:border-box; background:#fff; }
-    .btn{ width:100%; margin-top:14px; padding:11px; border:0; border-radius:8px; cursor:pointer; font-weight:700; }
-    .btn-primary{ background:#f3c623; }
+    .btn{ width:100%; margin-top:14px; padding:11px; border:0; border-radius:8px; cursor:pointer; font-weight:700; background:#f3c623; }
+    .msg{ margin-top:10px; font-size:13px; min-height:18px; }
     .qrbox{ margin-top:16px; border:1px solid #e5e7eb; border-radius:12px; padding:14px; display:none; }
     .row{ display:flex; gap:12px; align-items:center; }
     .code{ font-size:28px; font-weight:800; letter-spacing:2px; }
-    .hint{ font-size:12px; color:var(--muted); margin-top:10px; background:#eef2ff; padding:10px; border-radius:10px; }
-    .msg{ margin-top:10px; font-size:13px; min-height:18px; }
     a{ color:#1f4a8d; text-decoration:none; word-break:break-all; }
+    .debug{ margin-top:10px; font-size:12px; color:#111827; background:#f3f4f6; border:1px solid #e5e7eb; padding:10px; border-radius:10px; white-space:pre-wrap; }
   </style>
 </head>
 
@@ -39,29 +36,28 @@
 
   <div class="wrap">
     <div class="card">
-      <h1>Inicio de Sesión del Tutor</h1>
-      <div class="crumb">🏠 Inicio &nbsp;›&nbsp; Generar QR Código</div>
+      <h3 style="margin:0 0 10px;">Inicio de Sesión del Tutor</h3>
 
       <label>Campus</label>
       <select id="campus">
         <option>Casa Central</option>
         <option>San Joaquín</option>
-        <option>Vitacura</option>
+        <option selected>Vitacura</option>
       </select>
 
       <label>Sala</label>
-      <input id="sala" placeholder="Ej: A-315" value="A-315" />
+      <input id="sala" value="ciac" />
 
       <label>Tipo de sesión</label>
-      <input id="tipo" placeholder="Ej: Matemáticas" value="Matemáticas" />
+      <input id="tipo" value="matematicas" />
 
       <label>Bloque</label>
-      <input id="bloque" placeholder="Ej: 10:00 - 11:00" value="10:00 - 11:00" />
+      <input id="bloque" value="10:00-11:00" />
 
       <label>Correo tutor</label>
-      <input id="tutor" type="email" placeholder="tutor@usm.cl" />
+      <input id="tutor" type="email" value="andres.mirandav@usm.cl" />
 
-      <button id="btnGen" class="btn btn-primary">Generar Código QR</button>
+      <button id="btnGen" class="btn">Generar Código QR</button>
 
       <div class="msg" id="msg"></div>
 
@@ -73,23 +69,25 @@
             <div class="code" id="code">------</div>
           </div>
         </div>
-        <div class="hint">
-          Este QR y el código son válidos durante 10 minutos.
-          <div style="margin-top:8px;">
-            Link directo: <a id="link" href="#" target="_blank">abrir check-in</a>
-          </div>
+        <div style="margin-top:8px; font-size:12px; color:var(--muted);">
+          Link: <a id="link" href="#" target="_blank">abrir check-in</a>
         </div>
       </div>
-    </div>
 
-    <div style="text-align:center; color:#6b7280; font-size:12px; margin:14px 0 30px;">
-      © Universidad Técnica Federico Santa María
+      <div class="debug" id="debug">Debug: cargado ✅</div>
     </div>
   </div>
 
   <script>
+    // Capturar errores JS y mostrarlos en pantalla
+    const debugEl = document.getElementById("debug");
+    window.addEventListener("error", (e) => {
+      debugEl.textContent = "JS Error:\n" + (e?.message || e);
+    });
+
     const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
+
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const msg = document.getElementById("msg");
@@ -103,50 +101,65 @@
     }
 
     document.getElementById("btnGen").addEventListener("click", async () => {
-      msg.style.color = "#111827";
-      msg.textContent = "Generando...";
+      try {
+        msg.style.color = "#111827";
+        msg.textContent = "Generando…";
 
-      const campus = document.getElementById("campus").value;
-      const sala = document.getElementById("sala").value.trim();
-      const tipo = document.getElementById("tipo").value.trim();
-      const bloque = document.getElementById("bloque").value.trim();
-      const tutor = document.getElementById("tutor").value.trim().toLowerCase();
+        const campus = document.getElementById("campus").value;
+        const sala = document.getElementById("sala").value.trim();
+        const tipo = document.getElementById("tipo").value.trim();
+        const bloque = document.getElementById("bloque").value.trim();
+        const tutor = document.getElementById("tutor").value.trim().toLowerCase();
 
-      if (!tutor.endsWith("@usm.cl")) {
+        debugEl.textContent = "Debug:\n- click ✅\n- campus=" + campus + "\n- tutor=" + tutor;
+
+        if (!tutor.endsWith("@usm.cl")) {
+          msg.style.color = "crimson";
+          msg.textContent = "Ingresa un correo tutor @usm.cl";
+          return;
+        }
+
+        const codigo6 = genCode6();
+        const expira = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+        const { error } = await db.from("sesiones").insert([{
+          campus, sala, tipo, bloque,
+          tutor_correo: tutor,
+          codigo6,
+          expira_en: expira
+        }]);
+
+        if (error) {
+          msg.style.color = "crimson";
+          msg.textContent = "Error BD: " + error.message;
+          debugEl.textContent += "\n\nDB error:\n" + JSON.stringify(error, null, 2);
+          return;
+        }
+
+        const checkinUrl = `${location.origin}/checkin.html?code=${encodeURIComponent(codigo6)}`;
+
+        codeEl.textContent = codigo6;
+        linkEl.href = checkinUrl;
+        linkEl.textContent = checkinUrl;
+
+        qrbox.style.display = "block";
+        QRCode.toCanvas(qrCanvas, checkinUrl, { margin: 1, width: 150 }, (err) => {
+          if (err) {
+            msg.style.color = "crimson";
+            msg.textContent = "Error QR: " + err.message;
+            debugEl.textContent += "\n\nQR error:\n" + err.message;
+          }
+        });
+
+        msg.style.color = "green";
+        msg.textContent = "✅ Código generado.";
+        debugEl.textContent += "\n\n✅ Insert OK. code=" + codigo6;
+
+      } catch (err) {
         msg.style.color = "crimson";
-        msg.textContent = "Ingresa un correo tutor @usm.cl";
-        return;
+        msg.textContent = "Error JS: " + (err?.message || err);
+        debugEl.textContent += "\n\nCatch:\n" + (err?.stack || err);
       }
-
-      const codigo6 = genCode6();
-      const expira = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
-      const { error } = await db.from("sesiones").insert([{
-        campus, sala, tipo, bloque,
-        tutor_correo: tutor,
-        codigo6,
-        expira_en: expira
-      }]);
-
-      if (error) {
-        msg.style.color = "crimson";
-        msg.textContent = "Error: " + error.message;
-        return;
-      }
-
-      const checkinUrl = `${location.origin}/checkin.html?code=${encodeURIComponent(codigo6)}`;
-
-      codeEl.textContent = codigo6;
-      linkEl.href = checkinUrl;
-      linkEl.textContent = checkinUrl;
-
-      qrbox.style.display = "block";
-      QRCode.toCanvas(qrCanvas, checkinUrl, { margin: 1, width: 150 }, (err) => {
-        if (err) console.error(err);
-      });
-
-      msg.style.color = "green";
-      msg.textContent = "✅ Código generado.";
     });
   </script>
 </body>
