@@ -14,7 +14,6 @@
       --muted:#6b7280;
       --line:#e5e7eb;
       --cta:#f3c623;
-      --ok:#16a34a;
     }
 
     body{ margin:0; font-family: Arial, sans-serif; background:var(--bg); color:#111827; }
@@ -41,95 +40,81 @@
       padding:6px 10px;
       border-radius:999px;
     }
+    .crumb{ font-size:12px; color:rgba(255,255,255,.92); margin-top:4px; }
 
     .wrap{ max-width:980px; margin:22px auto; padding:0 14px; }
-    .crumb{ font-size:12px; color:rgba(255,255,255,.9); opacity:.95; }
-
-    .grid{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:14px;
-      margin-top:14px;
-    }
-    @media (min-width: 900px){
-      .grid{ grid-template-columns: 1.2fr .8fr; }
-    }
 
     .card{
       background:var(--card);
       border-radius:14px;
       box-shadow:0 8px 20px rgba(0,0,0,.08);
       border:1px solid var(--line);
-      padding:16px;
+      padding:18px;
     }
 
     h1{ margin:0 0 8px; font-size:22px; }
-    h2{ margin:0 0 10px; font-size:16px; }
-    p{ margin:0; color:var(--muted); line-height:1.35; }
+    p{ margin:0; color:var(--muted); line-height:1.4; }
 
     .steps{
       display:grid;
-      grid-template-columns: 1fr;
+      grid-template-columns:1fr;
       gap:12px;
-      margin-top:12px;
+      margin-top:14px;
+    }
+    @media (min-width: 900px){
+      .steps{ grid-template-columns: 1fr 1fr 1fr; }
     }
 
     .step{
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:14px;
       background:#fff;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-height: 180px;
     }
-    .stepHead{
+    .stepTop{
       display:flex;
       align-items:center;
-      justify-content:space-between;
       gap:10px;
-      margin-bottom:8px;
     }
     .badge{
-      width:28px; height:28px;
-      border-radius:10px;
+      width:34px; height:34px;
+      border-radius:12px;
+      background:#eef2ff;
+      color:var(--blue);
       display:flex;
       align-items:center;
       justify-content:center;
-      font-weight:800;
-      background:#eef2ff;
-      color:var(--blue);
+      font-weight:900;
       flex:0 0 auto;
     }
-    .titleRow{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      min-width: 0;
-    }
     .stepTitle{
-      font-weight:800;
-      font-size:14px;
+      font-weight:900;
       margin:0;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+      font-size:14px;
     }
-    .small{
-      font-size:12px;
+    .stepDesc{
+      margin:0;
       color:var(--muted);
-      margin-top:6px;
+      font-size:13px;
+      line-height:1.35;
     }
 
     .btnRow{
       display:flex;
       gap:10px;
       flex-wrap:wrap;
-      margin-top:10px;
+      margin-top:auto;
     }
     .btn{
       border:0;
       border-radius:10px;
       padding:10px 12px;
       cursor:pointer;
-      font-weight:800;
+      font-weight:900;
       font-size:13px;
       text-decoration:none;
       display:inline-flex;
@@ -140,38 +125,11 @@
     .btnBlue{ background:var(--blue); color:#fff; }
     .btnGhost{ background:#fff; border:1px solid var(--line); color:#111827; }
 
-    .hint{
-      margin-top:12px;
-      background:#ecfeff;
-      border:1px solid #a5f3fc;
-      padding:12px;
-      border-radius:12px;
-      font-size:12px;
-      color:#0f172a;
-    }
-
-    .list{
-      margin:10px 0 0;
-      padding-left:18px;
-      color:var(--muted);
-      font-size:13px;
-    }
-    .list li{ margin:6px 0; }
-
     .footer{
       text-align:center;
       color:var(--muted);
       font-size:12px;
       margin:14px 0 30px;
-    }
-
-    code.kbd{
-      background:#f3f4f6;
-      border:1px solid var(--line);
-      padding:2px 6px;
-      border-radius:8px;
-      font-size:12px;
-      color:#111827;
     }
   </style>
 </head>
@@ -182,118 +140,68 @@
       <div class="brand">
         <span>CIAC</span>
         <span style="font-weight:600; opacity:.92;">CIAC Check-In</span>
-        <span class="pill">MVP Cloud</span>
+        <span class="pill">Sistema</span>
       </div>
       <div class="crumb">🏠 Inicio</div>
     </div>
 
     <a class="btn btnGhost" href="reporte.html" style="background:rgba(255,255,255,.95);">
-      📊 Ir al Reporte
+      🔒 Reporte
     </a>
   </div>
 
   <div class="wrap">
-    <div class="grid">
-      <!-- Columna principal -->
-      <div class="card">
-        <h1>Marcaje de asistencia con QR</h1>
-        <p>Flujo simple: el tutor crea una sesión (código + QR), el alumno marca asistencia y el sistema queda registrado en el reporte.</p>
+    <div class="card">
+      <h1>Sistema de marcaje CIAC</h1>
+      <p>
+        El tutor crea una sesión con <b>código/QR temporal</b>, los estudiantes registran asistencia con su <b>correo USM</b>
+        y el módulo de <b>reporte</b> consolida los registros para seguimiento.
+      </p>
 
-        <div class="steps">
-          <!-- Step 1 -->
-          <div class="step">
-            <div class="stepHead">
-              <div class="titleRow">
-                <div class="badge">1</div>
-                <div>
-                  <div class="stepTitle">Tutor genera código y QR</div>
-                  <div class="small">Crea la sesión con expiración (10 minutos).</div>
-                </div>
-              </div>
-              <span style="font-size:12px; color:var(--ok); font-weight:800;">●</span>
-            </div>
-
-            <div class="btnRow">
-              <a class="btn btnPrimary" href="tutor.html">🧑‍🏫 Abrir Tutor</a>
-              <a class="btn btnGhost" href="tutor.html" target="_blank">↗ Abrir en otra pestaña</a>
-            </div>
-
-            <ul class="list">
-              <li>Selecciona campus/sala/tipo/bloque.</li>
-              <li>Ingresa correo del tutor.</li>
-              <li>Genera el QR y muestra el código de 6 dígitos.</li>
-            </ul>
-          </div>
-
-          <!-- Step 2 -->
-          <div class="step">
-            <div class="stepHead">
-              <div class="titleRow">
-                <div class="badge">2</div>
-                <div>
-                  <div class="stepTitle">Alumno marca asistencia</div>
-                  <div class="small">Escanea QR o ingresa el código + correo @usm.cl.</div>
-                </div>
-              </div>
-              <span style="font-size:12px; color:var(--ok); font-weight:800;">●</span>
-            </div>
-
-            <div class="btnRow">
-              <a class="btn btnBlue" href="checkin.html">✅ Abrir Check-in</a>
-              <a class="btn btnGhost" href="checkin.html" target="_blank">↗ Abrir en otra pestaña</a>
-            </div>
-
-            <div class="hint">
-              Tip: si el alumno llega por QR, el link ya trae el código (ej: <code class="kbd">checkin.html?code=123456</code>).
+      <div class="steps">
+        <div class="step">
+          <div class="stepTop">
+            <div class="badge">1</div>
+            <div>
+              <div class="stepTitle">Crear sesión (Tutor)</div>
+              <p class="stepDesc">Genera un código de 6 dígitos y un QR válido por 10 minutos.</p>
             </div>
           </div>
 
-          <!-- Step 3 -->
-          <div class="step">
-            <div class="stepHead">
-              <div class="titleRow">
-                <div class="badge">3</div>
-                <div>
-                  <div class="stepTitle">Reporte y seguimiento</div>
-                  <div class="small">Visualiza registros y consolida asistencia.</div>
-                </div>
-              </div>
-              <span style="font-size:12px; color:var(--ok); font-weight:800;">●</span>
-            </div>
-
-            <div class="btnRow">
-              <a class="btn btnBlue" href="reporte.html">📊 Abrir Reporte</a>
-              <a class="btn btnGhost" href="reporte.html" target="_blank">↗ Abrir en otra pestaña</a>
-            </div>
-
-            <ul class="list">
-              <li>Permite ver alumno, tutor, código y fecha/hora.</li>
-              <li>Sirve como base para export/estadísticas (siguiente mejora).</li>
-            </ul>
+          <div class="btnRow">
+            <a class="btn btnPrimary" href="tutor.html">🧑‍🏫 Ir a Tutor</a>
+            <a class="btn btnGhost" href="tutor.html" target="_blank">↗ Nueva pestaña</a>
           </div>
         </div>
-      </div>
 
-      <!-- Columna derecha -->
-      <div class="card">
-        <h2>Checklist rápido</h2>
-        <ul class="list">
-          <li>Generar sesión en <code class="kbd">tutor.html</code></li>
-          <li>Marcar en <code class="kbd">checkin.html</code></li>
-          <li>Verificar en <code class="kbd">reporte.html</code></li>
-        </ul>
+        <div class="step">
+          <div class="stepTop">
+            <div class="badge">2</div>
+            <div>
+              <div class="stepTitle">Marcar asistencia (Alumno)</div>
+              <p class="stepDesc">Escanea el QR o ingresa el código y tu correo institucional.</p>
+            </div>
+          </div>
 
-        <div class="hint" style="margin-top:12px;">
-          Si “no se ve” un cambio, abre en incógnito o recarga duro con <code class="kbd">Ctrl</code> + <code class="kbd">Shift</code> + <code class="kbd">R</code>.
+          <div class="btnRow">
+            <a class="btn btnBlue" href="checkin.html">✅ Ir a Check-in</a>
+            <a class="btn btnGhost" href="checkin.html" target="_blank">↗ Nueva pestaña</a>
+          </div>
         </div>
 
-        <div style="margin-top:14px; border-top:1px solid var(--line); padding-top:12px;">
-          <h2>Próximas mejoras (mockup)</h2>
-          <ul class="list">
-            <li>Dejar el reporte “bonito”: filtros y export CSV/Excel.</li>
-            <li>Bloquear el reporte con clave / login tutor.</li>
-            <li>Métricas: total por sesión, por campus, etc.</li>
-          </ul>
+        <div class="step">
+          <div class="stepTop">
+            <div class="badge">3</div>
+            <div>
+              <div class="stepTitle">Revisar registros (Reporte)</div>
+              <p class="stepDesc">Acceso restringido con clave para visualizar y filtrar asistencia.</p>
+            </div>
+          </div>
+
+          <div class="btnRow">
+            <a class="btn btnBlue" href="reporte.html">🔒 Ir a Reporte</a>
+            <a class="btn btnGhost" href="reporte.html" target="_blank">↗ Nueva pestaña</a>
+          </div>
         </div>
       </div>
     </div>
