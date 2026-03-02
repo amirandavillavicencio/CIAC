@@ -5,25 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>CIAC Check-In · Tutor</title>
 
-<!-- Supabase -->
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-<!-- QR Library (IMPORTANTE: este es el que dibuja el QR) -->
-<script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
-
 <style>
-:root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; --muted:#6b7280; }
-body{ margin:0; font-family:Arial; background:var(--bg); }
+:root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; }
+body{ margin:0; font-family:Arial; background:var(--bg);}
 .topbar{ background:var(--blue); color:#fff; padding:16px; font-weight:700;}
 .wrap{ max-width:420px; margin:20px auto; padding:0 14px;}
 .card{ background:#fff; padding:20px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,.08);}
 label{ font-size:12px; display:block; margin-top:10px;}
 input,select{ width:100%; padding:10px; margin-top:4px; border-radius:8px; border:1px solid #ccc;}
 button{ width:100%; margin-top:14px; padding:11px; border-radius:8px; border:0; background:#f3c623; font-weight:700; cursor:pointer;}
-.qrbox{ margin-top:15px; display:none;}
+.qrbox{ margin-top:15px; display:none; text-align:center;}
 .code{ font-size:28px; font-weight:800; margin-top:8px;}
 .msg{ margin-top:10px; font-size:13px;}
-.debug{ margin-top:10px; font-size:12px; background:#f3f4f6; padding:10px; border-radius:8px;}
+img{ margin-top:10px; border:1px solid #e5e7eb; padding:10px; border-radius:10px;}
 </style>
 </head>
 
@@ -58,11 +54,9 @@ button{ width:100%; margin-top:14px; padding:11px; border-radius:8px; border:0; 
 <div class="msg" id="msg"></div>
 
 <div class="qrbox" id="qrbox">
-<canvas id="qr" width="160" height="160" style="border:1px solid #e5e7eb;"></canvas>
+<img id="qrImg" width="180">
 <div class="code" id="code"></div>
 </div>
-
-<div class="debug" id="debug">Debug listo ✅</div>
 
 </div>
 </div>
@@ -73,28 +67,11 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const msg = document.getElementById("msg");
-const qrbox = document.getElementById("qrbox");
-const codeEl = document.getElementById("code");
-const qrCanvas = document.getElementById("qr");
-const debug = document.getElementById("debug");
-
 function genCode6() {
 return String(Math.floor(100000 + Math.random() * 900000));
 }
 
 document.getElementById("btnGen").addEventListener("click", async () => {
-
-try {
-
-msg.innerText = "Generando...";
-debug.innerText = "Click detectado ✅";
-
-if (!window.QRCode) {
-msg.innerText = "Error: librería QR no cargó.";
-debug.innerText = "QRCode undefined ❌";
-return;
-}
 
 const campus = document.getElementById("campus").value;
 const sala = document.getElementById("sala").value;
@@ -116,30 +93,19 @@ expira_en: expira
 }]);
 
 if (error) {
-msg.innerText = "Error BD: " + error.message;
-debug.innerText = JSON.stringify(error,null,2);
+document.getElementById("msg").innerText = "Error BD: " + error.message;
 return;
 }
 
-const url = location.origin + "/checkin.html?code=" + codigo6;
+const checkinUrl = location.origin + "/checkin.html?code=" + codigo6;
 
-QRCode.toCanvas(qrCanvas, url, { width:160 }, function (err) {
-if (err) {
-msg.innerText = "Error QR: " + err.message;
-debug.innerText = err.message;
-return;
-}
-});
+/* GENERAR QR SIN LIBRERÍA */
+const qrApi = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(checkinUrl);
 
-codeEl.innerText = codigo6;
-qrbox.style.display = "block";
-msg.innerText = "Código generado correctamente.";
-debug.innerText += "\nInsert OK y QR dibujado.";
-
-} catch(e) {
-msg.innerText = "Error JS: " + e.message;
-debug.innerText = e.stack;
-}
+document.getElementById("qrImg").src = qrApi;
+document.getElementById("code").innerText = codigo6;
+document.getElementById("qrbox").style.display = "block";
+document.getElementById("msg").innerText = "Código generado correctamente.";
 
 });
 </script>
