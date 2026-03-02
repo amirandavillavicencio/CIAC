@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CIAC Check-In · Tutor</title>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+<style>
+:root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; }
+body{ margin:0; font-family:Arial; background:var(--bg);}
+.topbar{ background:var(--blue); color:#fff; padding:16px; font-weight:700;}
+.wrap{ max-width:420px; margin:20px auto; padding:0 14px;}
+.card{ background:#fff; padding:20px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,.08);}
+label{ font-size:12px; display:block; margin-top:10px;}
+input,select{ width:100%; padding:10px; margin-top:4px; border-radius:8px; border:1px solid #ccc;}
+button{ width:100%; margin-top:14px; padding:11px; border-radius:8px; border:0; background:#f3c623; font-weight:700;}
+.qrbox{ margin-top:15px; display:none;}
+.code{ font-size:28px; font-weight:800; margin-top:8px;}
+.msg{ margin-top:10px; font-size:13px;}
+</style>
+</head>
+
+<body>
+<div class="topbar">CIAC Check-In · Tutor</div>
+
+<div class="wrap">
+<div class="card">
+
+<label>Campus</label>
+<select id="campus">
+<option>Casa Central</option>
+<option>San Joaquín</option>
+<option>Vitacura</option>
+</select>
+
+<label>Sala</label>
+<input id="sala" placeholder="Ej: A-315">
+
+<label>Tipo de sesión</label>
+<input id="tipo" placeholder="Matemáticas">
+
+<label>Bloque</label>
+<input id="bloque" placeholder="10:00 - 11:00">
+
+<label>Correo tutor</label>
+<input id="tutor" placeholder="tutor@usm.cl">
+
+<button id="btn">Generar Código QR</button>
+
+<div class="msg" id="msg"></div>
+
+<div class="qrbox" id="qrbox">
+<canvas id="qr"></canvas>
+<div class="code" id="code"></div>
+</div>
+
+</div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function genCode6() {
+return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+document.getElementById("btn").addEventListener("click", async () => {
+
+const campus = campus.value;
+const sala = document.getElementById("sala").value;
+const tipo = document.getElementById("tipo").value;
+const bloque = document.getElementById("bloque").value;
+const tutor = document.getElementById("tutor").value;
+const codigo6 = genCode6();
+const expira = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+const { error } = await db.from("sesiones").insert([{
+campus, sala, tipo, bloque,
+tutor_correo: tutor,
+codigo6,
+expira_en: expira
+}]);
+
+if (error) {
+msg.innerText = "Error: " + error.message;
+return;
+}
+
+const url = `${location.origin}/checkin.html?code=${codigo6}`;
+QRCode.toCanvas(document.getElementById("qr"), url, {width:150});
+document.getElementById("code").innerText = codigo6;
+document.getElementById("qrbox").style.display = "block";
+msg.innerText = "Código generado correctamente.";
+});
+</script>
+</body>
+</html>
