@@ -1,103 +1,153 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CIAC Check-In · Tutor</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CIAC Check-In · Tutor</title>
 
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <link rel="icon" href="data:,">
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
-<style>
-:root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; }
-body{ margin:0; font-family:Arial; background:var(--bg);}
-.topbar{ background:var(--blue); color:#fff; padding:16px; font-weight:700;}
-.wrap{ max-width:420px; margin:20px auto; padding:0 14px;}
-.card{ background:#fff; padding:20px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,.08);}
-label{ font-size:12px; display:block; margin-top:10px;}
-input,select{ width:100%; padding:10px; margin-top:4px; border-radius:8px; border:1px solid #ccc;}
-button{ width:100%; margin-top:14px; padding:11px; border-radius:8px; border:0; background:#f3c623; font-weight:700;}
-.qrbox{ margin-top:15px; display:none;}
-.code{ font-size:28px; font-weight:800; margin-top:8px;}
-.msg{ margin-top:10px; font-size:13px;}
-</style>
+  <style>
+    :root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; --muted:#6b7280; }
+    body{ margin:0; font-family: Arial, sans-serif; background:var(--bg); }
+    .topbar{ background:var(--blue); color:#fff; padding:16px 22px; display:flex; align-items:center; justify-content:space-between; }
+    .brand{ font-weight:700; letter-spacing:.3px; }
+    .wrap{ max-width:420px; margin:22px auto; padding:0 14px; }
+    .card{ background:var(--card); border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,.08); padding:18px; }
+    h1{ font-size:20px; margin:0 0 10px; }
+    .crumb{ font-size:12px; color:var(--muted); margin-bottom:14px; }
+    label{ display:block; font-size:12px; color:var(--muted); margin:10px 0 6px; }
+    select,input{ width:100%; padding:10px; border:1px solid #d1d5db; border-radius:8px; box-sizing:border-box; background:#fff; }
+    .btn{ width:100%; margin-top:14px; padding:11px; border:0; border-radius:8px; cursor:pointer; font-weight:700; }
+    .btn-primary{ background:#f3c623; }
+    .qrbox{ margin-top:16px; border:1px solid #e5e7eb; border-radius:12px; padding:14px; display:none; }
+    .row{ display:flex; gap:12px; align-items:center; }
+    .code{ font-size:28px; font-weight:800; letter-spacing:2px; }
+    .hint{ font-size:12px; color:var(--muted); margin-top:10px; background:#eef2ff; padding:10px; border-radius:10px; }
+    .msg{ margin-top:10px; font-size:13px; min-height:18px; }
+    a{ color:#1f4a8d; text-decoration:none; word-break:break-all; }
+  </style>
 </head>
 
 <body>
-<div class="topbar">CIAC Check-In · Tutor</div>
+  <div class="topbar">
+    <div class="brand">CIAC <span style="font-weight:400; opacity:.9;">CIAC Check-In</span></div>
+    <button class="btn" style="width:auto; padding:8px 12px; background:#ffffff; color:#111827; font-weight:700;">Cerrar Sesión</button>
+  </div>
 
-<div class="wrap">
-<div class="card">
+  <div class="wrap">
+    <div class="card">
+      <h1>Inicio de Sesión del Tutor</h1>
+      <div class="crumb">🏠 Inicio &nbsp;›&nbsp; Generar QR Código</div>
 
-<label>Campus</label>
-<select id="campus">
-<option>Casa Central</option>
-<option>San Joaquín</option>
-<option>Vitacura</option>
-</select>
+      <label>Campus</label>
+      <select id="campus">
+        <option>Casa Central</option>
+        <option>San Joaquín</option>
+        <option>Vitacura</option>
+      </select>
 
-<label>Sala</label>
-<input id="sala" placeholder="Ej: A-315">
+      <label>Sala</label>
+      <input id="sala" placeholder="Ej: A-315" value="A-315" />
 
-<label>Tipo de sesión</label>
-<input id="tipo" placeholder="Matemáticas">
+      <label>Tipo de sesión</label>
+      <input id="tipo" placeholder="Ej: Matemáticas" value="Matemáticas" />
 
-<label>Bloque</label>
-<input id="bloque" placeholder="10:00 - 11:00">
+      <label>Bloque</label>
+      <input id="bloque" placeholder="Ej: 10:00 - 11:00" value="10:00 - 11:00" />
 
-<label>Correo tutor</label>
-<input id="tutor" placeholder="tutor@usm.cl">
+      <label>Correo tutor</label>
+      <input id="tutor" type="email" placeholder="tutor@usm.cl" />
 
-<button id="btn">Generar Código QR</button>
+      <button id="btnGen" class="btn btn-primary">Generar Código QR</button>
 
-<div class="msg" id="msg"></div>
+      <div class="msg" id="msg"></div>
 
-<div class="qrbox" id="qrbox">
-<canvas id="qr"></canvas>
-<div class="code" id="code"></div>
-</div>
+      <div class="qrbox" id="qrbox">
+        <div class="row">
+          <canvas id="qr"></canvas>
+          <div>
+            <div style="font-size:12px; color:var(--muted);">Código</div>
+            <div class="code" id="code">------</div>
+          </div>
+        </div>
+        <div class="hint">
+          Este QR y el código son válidos durante 10 minutos.
+          <div style="margin-top:8px;">
+            Link directo: <a id="link" href="#" target="_blank">abrir check-in</a>
+          </div>
+        </div>
+      </div>
+    </div>
 
-</div>
-</div>
+    <div style="text-align:center; color:#6b7280; font-size:12px; margin:14px 0 30px;">
+      © Universidad Técnica Federico Santa María
+    </div>
+  </div>
 
-<script>
-const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
+  <script>
+    const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const msg = document.getElementById("msg");
+    const qrbox = document.getElementById("qrbox");
+    const codeEl = document.getElementById("code");
+    const linkEl = document.getElementById("link");
+    const qrCanvas = document.getElementById("qr");
 
-function genCode6() {
-return String(Math.floor(100000 + Math.random() * 900000));
-}
+    function genCode6() {
+      return String(Math.floor(100000 + Math.random() * 900000));
+    }
 
-document.getElementById("btn").addEventListener("click", async () => {
+    document.getElementById("btnGen").addEventListener("click", async () => {
+      msg.style.color = "#111827";
+      msg.textContent = "Generando...";
 
-const campus = campus.value;
-const sala = document.getElementById("sala").value;
-const tipo = document.getElementById("tipo").value;
-const bloque = document.getElementById("bloque").value;
-const tutor = document.getElementById("tutor").value;
-const codigo6 = genCode6();
-const expira = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      const campus = document.getElementById("campus").value;
+      const sala = document.getElementById("sala").value.trim();
+      const tipo = document.getElementById("tipo").value.trim();
+      const bloque = document.getElementById("bloque").value.trim();
+      const tutor = document.getElementById("tutor").value.trim().toLowerCase();
 
-const { error } = await db.from("sesiones").insert([{
-campus, sala, tipo, bloque,
-tutor_correo: tutor,
-codigo6,
-expira_en: expira
-}]);
+      if (!tutor.endsWith("@usm.cl")) {
+        msg.style.color = "crimson";
+        msg.textContent = "Ingresa un correo tutor @usm.cl";
+        return;
+      }
 
-if (error) {
-msg.innerText = "Error: " + error.message;
-return;
-}
+      const codigo6 = genCode6();
+      const expira = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-const url = `${location.origin}/checkin.html?code=${codigo6}`;
-QRCode.toCanvas(document.getElementById("qr"), url, {width:150});
-document.getElementById("code").innerText = codigo6;
-document.getElementById("qrbox").style.display = "block";
-msg.innerText = "Código generado correctamente.";
-});
-</script>
+      const { error } = await db.from("sesiones").insert([{
+        campus, sala, tipo, bloque,
+        tutor_correo: tutor,
+        codigo6,
+        expira_en: expira
+      }]);
+
+      if (error) {
+        msg.style.color = "crimson";
+        msg.textContent = "Error: " + error.message;
+        return;
+      }
+
+      const checkinUrl = `${location.origin}/checkin.html?code=${encodeURIComponent(codigo6)}`;
+
+      codeEl.textContent = codigo6;
+      linkEl.href = checkinUrl;
+      linkEl.textContent = checkinUrl;
+
+      qrbox.style.display = "block";
+      QRCode.toCanvas(qrCanvas, checkinUrl, { margin: 1, width: 150 }, (err) => {
+        if (err) console.error(err);
+      });
+
+      msg.style.color = "green";
+      msg.textContent = "✅ Código generado.";
+    });
+  </script>
 </body>
 </html>
