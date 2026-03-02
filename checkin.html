@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CIAC Check-In</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<h2>Marcar Asistencia</h2>
+
+<input id="correo" placeholder="nombre@usm.cl">
+<input id="code" placeholder="Código 6 dígitos">
+<button id="btn">Registrar</button>
+
+<div id="msg"></div>
+
+<script>
+const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const params = new URLSearchParams(location.search);
+if (params.get("code")) {
+document.getElementById("code").value = params.get("code");
+}
+
+btn.onclick = async () => {
+
+const correo = correo.value;
+const code = document.getElementById("code").value;
+
+const { data: sesion } = await db
+.from("sesiones")
+.select("*")
+.eq("codigo6", code)
+.order("created_at",{ascending:false})
+.limit(1)
+.maybeSingle();
+
+if (!sesion) {
+msg.innerText = "Código inválido.";
+return;
+}
+
+if (new Date() > new Date(sesion.expira_en)) {
+msg.innerText = "Código expirado.";
+return;
+}
+
+const { error } = await db.from("asistencias_v2").insert([{
+sesion_id: sesion.id,
+correo_alumno: correo
+}]);
+
+if (error) {
+msg.innerText = "Error: " + error.message;
+return;
+}
+
+msg.innerText = "Asistencia registrada correctamente.";
+};
+</script>
+</body>
+</html>
