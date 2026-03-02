@@ -1,166 +1,148 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CIAC Check-In · Tutor</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CIAC Check-In · Tutor</title>
 
-  <link rel="icon" href="data:,">
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<!-- Supabase -->
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-  <style>
-    :root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; --muted:#6b7280; }
-    body{ margin:0; font-family: Arial, sans-serif; background:var(--bg); }
-    .topbar{ background:var(--blue); color:#fff; padding:16px 22px; display:flex; align-items:center; justify-content:space-between; }
-    .brand{ font-weight:700; letter-spacing:.3px; }
-    .wrap{ max-width:420px; margin:22px auto; padding:0 14px; }
-    .card{ background:var(--card); border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,.08); padding:18px; }
-    label{ display:block; font-size:12px; color:var(--muted); margin:10px 0 6px; }
-    select,input{ width:100%; padding:10px; border:1px solid #d1d5db; border-radius:8px; box-sizing:border-box; background:#fff; }
-    .btn{ width:100%; margin-top:14px; padding:11px; border:0; border-radius:8px; cursor:pointer; font-weight:700; background:#f3c623; }
-    .msg{ margin-top:10px; font-size:13px; min-height:18px; }
-    .qrbox{ margin-top:16px; border:1px solid #e5e7eb; border-radius:12px; padding:14px; display:none; }
-    .row{ display:flex; gap:12px; align-items:center; }
-    .code{ font-size:28px; font-weight:800; letter-spacing:2px; }
-    a{ color:#1f4a8d; text-decoration:none; word-break:break-all; }
-    .debug{ margin-top:10px; font-size:12px; color:#111827; background:#f3f4f6; border:1px solid #e5e7eb; padding:10px; border-radius:10px; white-space:pre-wrap; }
-  </style>
+<!-- QR Library (IMPORTANTE: este es el que dibuja el QR) -->
+<script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+<style>
+:root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; --muted:#6b7280; }
+body{ margin:0; font-family:Arial; background:var(--bg); }
+.topbar{ background:var(--blue); color:#fff; padding:16px; font-weight:700;}
+.wrap{ max-width:420px; margin:20px auto; padding:0 14px;}
+.card{ background:#fff; padding:20px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,.08);}
+label{ font-size:12px; display:block; margin-top:10px;}
+input,select{ width:100%; padding:10px; margin-top:4px; border-radius:8px; border:1px solid #ccc;}
+button{ width:100%; margin-top:14px; padding:11px; border-radius:8px; border:0; background:#f3c623; font-weight:700; cursor:pointer;}
+.qrbox{ margin-top:15px; display:none;}
+.code{ font-size:28px; font-weight:800; margin-top:8px;}
+.msg{ margin-top:10px; font-size:13px;}
+.debug{ margin-top:10px; font-size:12px; background:#f3f4f6; padding:10px; border-radius:8px;}
+</style>
 </head>
 
 <body>
-  <div class="topbar">
-    <div class="brand">CIAC <span style="font-weight:400; opacity:.9;">CIAC Check-In</span></div>
-    <button class="btn" style="width:auto; padding:8px 12px; background:#ffffff; color:#111827; font-weight:700;">Cerrar Sesión</button>
-  </div>
 
-  <div class="wrap">
-    <div class="card">
-      <h3 style="margin:0 0 10px;">Inicio de Sesión del Tutor</h3>
+<div class="topbar">CIAC Check-In · Tutor</div>
 
-      <label>Campus</label>
-      <select id="campus">
-        <option>Casa Central</option>
-        <option>San Joaquín</option>
-        <option selected>Vitacura</option>
-      </select>
+<div class="wrap">
+<div class="card">
 
-      <label>Sala</label>
-      <input id="sala" value="ciac" />
+<label>Campus</label>
+<select id="campus">
+<option>Casa Central</option>
+<option>San Joaquín</option>
+<option selected>Vitacura</option>
+</select>
 
-      <label>Tipo de sesión</label>
-      <input id="tipo" value="matematicas" />
+<label>Sala</label>
+<input id="sala" value="ciac">
 
-      <label>Bloque</label>
-      <input id="bloque" value="10:00-11:00" />
+<label>Tipo de sesión</label>
+<input id="tipo" value="matematicas">
 
-      <label>Correo tutor</label>
-      <input id="tutor" type="email" value="andres.mirandav@usm.cl" />
+<label>Bloque</label>
+<input id="bloque" value="10:00-11:00">
 
-      <button id="btnGen" class="btn">Generar Código QR</button>
+<label>Correo tutor</label>
+<input id="tutor" type="email" value="andres.mirandav@usm.cl">
 
-      <div class="msg" id="msg"></div>
+<button id="btnGen">Generar Código QR</button>
 
-      <div class="qrbox" id="qrbox">
-        <div class="row">
-          <canvas id="qr"></canvas>
-          <div>
-            <div style="font-size:12px; color:var(--muted);">Código</div>
-            <div class="code" id="code">------</div>
-          </div>
-        </div>
-        <div style="margin-top:8px; font-size:12px; color:var(--muted);">
-          Link: <a id="link" href="#" target="_blank">abrir check-in</a>
-        </div>
-      </div>
+<div class="msg" id="msg"></div>
 
-      <div class="debug" id="debug">Debug: cargado ✅</div>
-    </div>
-  </div>
+<div class="qrbox" id="qrbox">
+<canvas id="qr" width="160" height="160" style="border:1px solid #e5e7eb;"></canvas>
+<div class="code" id="code"></div>
+</div>
 
-  <script>
-    // Capturar errores JS y mostrarlos en pantalla
-    const debugEl = document.getElementById("debug");
-    window.addEventListener("error", (e) => {
-      debugEl.textContent = "JS Error:\n" + (e?.message || e);
-    });
+<div class="debug" id="debug">Debug listo ✅</div>
 
-    const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
+</div>
+</div>
 
-    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<script>
+const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
 
-    const msg = document.getElementById("msg");
-    const qrbox = document.getElementById("qrbox");
-    const codeEl = document.getElementById("code");
-    const linkEl = document.getElementById("link");
-    const qrCanvas = document.getElementById("qr");
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    function genCode6() {
-      return String(Math.floor(100000 + Math.random() * 900000));
-    }
+const msg = document.getElementById("msg");
+const qrbox = document.getElementById("qrbox");
+const codeEl = document.getElementById("code");
+const qrCanvas = document.getElementById("qr");
+const debug = document.getElementById("debug");
 
-    document.getElementById("btnGen").addEventListener("click", async () => {
-      try {
-        msg.style.color = "#111827";
-        msg.textContent = "Generando…";
+function genCode6() {
+return String(Math.floor(100000 + Math.random() * 900000));
+}
 
-        const campus = document.getElementById("campus").value;
-        const sala = document.getElementById("sala").value.trim();
-        const tipo = document.getElementById("tipo").value.trim();
-        const bloque = document.getElementById("bloque").value.trim();
-        const tutor = document.getElementById("tutor").value.trim().toLowerCase();
+document.getElementById("btnGen").addEventListener("click", async () => {
 
-        debugEl.textContent = "Debug:\n- click ✅\n- campus=" + campus + "\n- tutor=" + tutor;
+try {
 
-        if (!tutor.endsWith("@usm.cl")) {
-          msg.style.color = "crimson";
-          msg.textContent = "Ingresa un correo tutor @usm.cl";
-          return;
-        }
+msg.innerText = "Generando...";
+debug.innerText = "Click detectado ✅";
 
-        const codigo6 = genCode6();
-        const expira = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+if (!window.QRCode) {
+msg.innerText = "Error: librería QR no cargó.";
+debug.innerText = "QRCode undefined ❌";
+return;
+}
 
-        const { error } = await db.from("sesiones").insert([{
-          campus, sala, tipo, bloque,
-          tutor_correo: tutor,
-          codigo6,
-          expira_en: expira
-        }]);
+const campus = document.getElementById("campus").value;
+const sala = document.getElementById("sala").value;
+const tipo = document.getElementById("tipo").value;
+const bloque = document.getElementById("bloque").value;
+const tutor = document.getElementById("tutor").value.toLowerCase();
 
-        if (error) {
-          msg.style.color = "crimson";
-          msg.textContent = "Error BD: " + error.message;
-          debugEl.textContent += "\n\nDB error:\n" + JSON.stringify(error, null, 2);
-          return;
-        }
+const codigo6 = genCode6();
+const expira = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-        const checkinUrl = `${location.origin}/checkin.html?code=${encodeURIComponent(codigo6)}`;
+const { error } = await db.from("sesiones").insert([{
+campus,
+sala,
+tipo,
+bloque,
+tutor_correo: tutor,
+codigo6,
+expira_en: expira
+}]);
 
-        codeEl.textContent = codigo6;
-        linkEl.href = checkinUrl;
-        linkEl.textContent = checkinUrl;
+if (error) {
+msg.innerText = "Error BD: " + error.message;
+debug.innerText = JSON.stringify(error,null,2);
+return;
+}
 
-        qrbox.style.display = "block";
-        QRCode.toCanvas(qrCanvas, checkinUrl, { margin: 1, width: 150 }, (err) => {
-          if (err) {
-            msg.style.color = "crimson";
-            msg.textContent = "Error QR: " + err.message;
-            debugEl.textContent += "\n\nQR error:\n" + err.message;
-          }
-        });
+const url = location.origin + "/checkin.html?code=" + codigo6;
 
-        msg.style.color = "green";
-        msg.textContent = "✅ Código generado.";
-        debugEl.textContent += "\n\n✅ Insert OK. code=" + codigo6;
+QRCode.toCanvas(qrCanvas, url, { width:160 }, function (err) {
+if (err) {
+msg.innerText = "Error QR: " + err.message;
+debug.innerText = err.message;
+return;
+}
+});
 
-      } catch (err) {
-        msg.style.color = "crimson";
-        msg.textContent = "Error JS: " + (err?.message || err);
-        debugEl.textContent += "\n\nCatch:\n" + (err?.stack || err);
-      }
-    });
-  </script>
+codeEl.innerText = codigo6;
+qrbox.style.display = "block";
+msg.innerText = "Código generado correctamente.";
+debug.innerText += "\nInsert OK y QR dibujado.";
+
+} catch(e) {
+msg.innerText = "Error JS: " + e.message;
+debug.innerText = e.stack;
+}
+
+});
+</script>
+
 </body>
 </html>
