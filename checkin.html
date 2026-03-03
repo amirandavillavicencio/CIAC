@@ -21,7 +21,6 @@
     label{ display:block; font-size:12px; color:var(--muted); margin-top:10px; }
     input{ width:100%; padding:10px; margin-top:4px; border-radius:10px; border:1px solid #d1d5db; box-sizing:border-box; background:#fff; }
     button{ width:100%; margin-top:14px; padding:11px; border-radius:10px; border:0; background:var(--blue); color:#fff; font-weight:900; cursor:pointer; }
-    button:disabled{ opacity:.55; cursor:not-allowed; }
     .msg{ margin-top:10px; font-size:13px; min-height:18px; }
     .hint{ margin-top:12px; background:#ecfeff; border:1px solid #a5f3fc; padding:12px; border-radius:12px; font-size:12px; color:#0f172a; line-height:1.35; }
   </style>
@@ -36,7 +35,7 @@
   <div class="wrap">
     <div class="card">
       <h1>Marcar asistencia</h1>
-      <p class="sub">Escanea el QR en sala. El token cambia cada 3 min.</p>
+      <p class="sub">Escanea el QR en sala. El token cambia cada 60 segundos.</p>
 
       <label>Correo institucional</label>
       <input id="correo" type="email" placeholder="nombre@usm.cl" autocomplete="email" />
@@ -55,7 +54,7 @@
 
 <script>
 const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
+const SUPABASE_ANON_KEY = "TU_ANON_KEY_AQUI";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const msg = document.getElementById("msg");
@@ -63,6 +62,7 @@ const correoEl = document.getElementById("correo");
 const tokenEl = document.getElementById("token");
 const btn = document.getElementById("btn");
 
+// Token desde querystring
 const params = new URLSearchParams(location.search);
 const qpToken = params.get("token");
 if (qpToken) tokenEl.value = qpToken;
@@ -76,30 +76,25 @@ function getDeviceId(){
   return deviceId;
 }
 
-function setStatus(text, color="#111827"){
-  msg.style.color = color;
-  msg.textContent = text;
-}
-
 btn.addEventListener("click", async () => {
-  btn.disabled = true;
-  setStatus("Validando…");
+  msg.style.color = "#111827";
+  msg.textContent = "Validando…";
 
   const correo = correoEl.value.trim().toLowerCase();
   const token = tokenEl.value.trim();
 
   if (!correo.endsWith("@usm.cl")) {
-    setStatus("Ingresa un correo @usm.cl", "crimson");
-    btn.disabled = false;
+    msg.style.color = "crimson";
+    msg.textContent = "Ingresa un correo @usm.cl";
     return;
   }
   if (!token) {
-    setStatus("Escanea el QR en sala o pega el token.", "crimson");
-    btn.disabled = false;
+    msg.style.color = "crimson";
+    msg.textContent = "Escanea el QR en sala o pega el token.";
     return;
   }
 
-  // Buscar sesión por token actual (entrada)
+  // Buscar sesión por token actual
   const { data: sesion, error: e1 } = await db
     .from("sesiones")
     .select("id, token_expira_en")
@@ -109,18 +104,18 @@ btn.addEventListener("click", async () => {
     .maybeSingle();
 
   if (e1) {
-    setStatus("Error: " + e1.message, "crimson");
-    btn.disabled = false;
+    msg.style.color = "crimson";
+    msg.textContent = "Error: " + e1.message;
     return;
   }
   if (!sesion) {
-    setStatus("Token inválido. Escanea el QR actualizado en sala.", "crimson");
-    btn.disabled = false;
+    msg.style.color = "crimson";
+    msg.textContent = "Token inválido. Escanea el QR actualizado en sala.";
     return;
   }
   if (!sesion.token_expira_en || (new Date() > new Date(sesion.token_expira_en))) {
-    setStatus("Token expirado. Escanea el QR actualizado en sala.", "crimson");
-    btn.disabled = false;
+    msg.style.color = "crimson";
+    msg.textContent = "Token expirado. Escanea el QR actualizado en sala.";
     return;
   }
 
@@ -133,19 +128,18 @@ btn.addEventListener("click", async () => {
   if (e2) {
     const m = (e2.message || "").toLowerCase();
     if (m.includes("duplicate") || (e2.code || "") === "23505") {
-      setStatus("Ya registraste asistencia desde este dispositivo en esta sesión.", "crimson");
-      btn.disabled = false;
+      msg.style.color = "crimson";
+      msg.textContent = "Ya registraste asistencia desde este dispositivo en esta sesión.";
       return;
     }
-    setStatus("Error: " + e2.message, "crimson");
-    btn.disabled = false;
+    msg.style.color = "crimson";
+    msg.textContent = "Error: " + e2.message;
     return;
   }
 
-  setStatus("✅ Asistencia registrada.", "green");
+  msg.style.color = "green";
+  msg.textContent = "✅ Asistencia registrada.";
   correoEl.value = "";
-  // tokenEl.value = ""; // opcional: si quieres limpiar token después
-  btn.disabled = false;
 });
 </script>
 </body>
