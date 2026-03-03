@@ -60,7 +60,7 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
     <div class="card">
       <h1>Control de sesión</h1>
       <p class="sub">
-        Entrada con QR dinámico (cambia cada 3 min) + salida con QR de 90s. Al terminar, usa <b>Terminar mentoría</b> para registrar hora de cierre.
+        Entrada con QR dinámico (cambia cada 3 min) + salida con QR de 90s. Al terminar, usa <b>Finalizar mentoría</b> para registrar hora de cierre.
       </p>
 
       <label>Campus</label>
@@ -76,25 +76,9 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
       <label>Tipo de sesión</label>
       <input id="tipo" placeholder="Ej: Matemáticas" value="matematicas" />
 
-      <!-- ✅ Horario dinámico: modo 1 (inicio+fin) o modo 2 (solo inicio) -->
-      <label>Horario</label>
-      <select id="horarioModo">
-        <option value="inicio_fin" selected>Inicio y fin</option>
-        <option value="solo_inicio">Solo inicio</option>
-      </select>
-
-      <div id="wrapInicioFin">
-        <label>Hora inicio</label>
-        <select id="horaInicio"></select>
-
-        <label>Hora fin</label>
-        <select id="horaFin"></select>
-      </div>
-
-      <div id="wrapSoloInicio" style="display:none;">
-        <label>Hora inicio</label>
-        <select id="horaInicioSolo"></select>
-      </div>
+      <!-- ✅ Horario simple: solo hora inicio -->
+      <label>Hora inicio</label>
+      <select id="horaInicio"></select>
 
       <label>Correo tutor</label>
       <input id="tutor" type="email" placeholder="tutor@usm.cl" value="andres.mirandav@usm.cl" />
@@ -102,7 +86,7 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
       <div class="btnRow">
         <button id="btnGen" class="btn btnPrimary">Generar QR de entrada</button>
         <button id="btnCheckout" class="btn btnBlue" disabled>Activar QR de salida</button>
-        <button id="btnEnd" class="btn btnDanger" disabled>Terminar mentoría</button>
+        <button id="btnEnd" class="btn btnDanger" disabled>Finalizar mentoría</button>
       </div>
 
       <div class="msg" id="msg"></div>
@@ -170,13 +154,8 @@ const outToken = document.getElementById("outToken");
 const outLink = document.getElementById("outLink");
 const outTimer = document.getElementById("outTimer");
 
-// Horario
-const horarioModoEl = document.getElementById("horarioModo");
-const wrapInicioFin = document.getElementById("wrapInicioFin");
-const wrapSoloInicio = document.getElementById("wrapSoloInicio");
+// Horario simple
 const horaInicioEl = document.getElementById("horaInicio");
-const horaFinEl = document.getElementById("horaFin");
-const horaInicioSoloEl = document.getElementById("horaInicioSolo");
 
 // State
 const LS_KEY = "ciac_tutor_active_session";
@@ -359,7 +338,6 @@ async function endMentoria(){
 
     const nowIso = new Date().toISOString();
 
-    // Intento 1: guardar termino_en + invalidar tokens
     let { error } = await db
       .from("sesiones")
       .update({
@@ -371,7 +349,6 @@ async function endMentoria(){
       })
       .eq("id", sessionId);
 
-    // Fallback si la columna termino_en no existe (no rompe la app)
     if (error && (error.message || "").toLowerCase().includes("termino_en")) {
       const r2 = await db
         .from("sesiones")
@@ -386,14 +363,14 @@ async function endMentoria(){
     }
 
     if (error) {
-      setMsg("Error al terminar mentoría: " + error.message, "crimson");
+      setMsg("Error al finalizar mentoría: " + error.message, "crimson");
       closed = false;
       return;
     }
 
     clearActiveFromLS();
 
-    setMsg("✅ Mentoría terminada. Se registró hora de término y QR inválidos.", "green");
+    setMsg("✅ Mentoría finalizada. Se registró hora de término y QR inválidos.", "green");
 
     inToken.textContent = "CERRADA";
     inTimer.textContent = "Sesión cerrada.";
@@ -471,7 +448,7 @@ async function recoverIfPossible(){
   setMsg("✅ Sesión recuperada. QR de entrada activo.", "green");
 }
 
-/* ===== Horario dinámico ===== */
+/* ===== Horario simple: solo hora inicio ===== */
 function pad2(n){ return String(n).padStart(2,'0'); }
 
 function buildTimes(startHH=8, endHH=22, stepMin=15){
@@ -484,7 +461,6 @@ function buildTimes(startHH=8, endHH=22, stepMin=15){
   }
   return out;
 }
-
 const TIMES = buildTimes(8, 22, 15);
 
 function fillSelect(selectEl, values){
@@ -497,52 +473,15 @@ function fillSelect(selectEl, values){
   }
 }
 
-function refreshFinOptions(){
-  const ini = horaInicioEl.value;
-  const idx = TIMES.indexOf(ini);
-  const finValues = (idx >= 0) ? TIMES.slice(idx + 1) : TIMES.slice(1);
-  fillSelect(horaFinEl, finValues);
-
-  // default fin = ini + 60 min (si existe)
-  const targetIdx = Math.min(TIMES.length - 1, (idx >= 0 ? idx + 4 : 4)); // 4 pasos de 15min = 60min
-  const target = TIMES[targetIdx];
-  if (finValues.includes(target)) horaFinEl.value = target;
-}
-
 function initHorario(){
-  fillSelect(horaInicioEl, TIMES.slice(0, TIMES.length - 1));
+  fillSelect(horaInicioEl, TIMES);
   horaInicioEl.value = "10:00";
-  refreshFinOptions();
-
-  fillSelect(horaInicioSoloEl, TIMES);
-  horaInicioSoloEl.value = "10:00";
-
-  horaInicioEl.addEventListener("change", refreshFinOptions);
-
-  function applyMode(){
-    const mode = horarioModoEl.value;
-    if (mode === "inicio_fin"){
-      wrapInicioFin.style.display = "block";
-      wrapSoloInicio.style.display = "none";
-    } else {
-      wrapInicioFin.style.display = "none";
-      wrapSoloInicio.style.display = "block";
-    }
-  }
-  horarioModoEl.addEventListener("change", applyMode);
-  applyMode();
 }
 
 function getBloqueValue(){
-  const mode = horarioModoEl.value;
-  if (mode === "inicio_fin"){
-    const ini = horaInicioEl.value;
-    const fin = horaFinEl.value;
-    return `${ini}-${fin}`;
-  }
-  return horaInicioSoloEl.value; // solo inicio
+  return horaInicioEl.value; // bloque = hora inicio
 }
-/* ============================ */
+/* ========================================== */
 
 btnGen.addEventListener("click", async () => {
   if (busy) return;
@@ -568,7 +507,7 @@ btnGen.addEventListener("click", async () => {
     return;
   }
   if (!sala || !tipo || !bloque){
-    setMsg("Completa Sala, Tipo de sesión y Horario.", "crimson");
+    setMsg("Completa Sala, Tipo de sesión y Hora inicio.", "crimson");
     setBusy(false);
     return;
   }
@@ -620,7 +559,7 @@ btnCheckout.addEventListener("click", async () => {
 });
 
 btnEnd.addEventListener("click", async () => {
-  const ok = confirm("¿Terminar mentoría? Esto registrará la hora de término e invalidará QR de entrada/salida.");
+  const ok = confirm("¿Finalizar mentoría? Esto registrará la hora de término e invalidará QR de entrada/salida.");
   if (ok) await endMentoria();
 });
 
