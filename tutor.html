@@ -25,7 +25,6 @@ input,select{ width:100%; padding:10px; margin-top:4px; border-radius:10px; bord
 .btnRow{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
 .btn{ flex:1 1 160px; padding:11px; border-radius:10px; border:0; font-weight:900; cursor:pointer; }
 .btnPrimary{ background:var(--cta); color:#111827; }
-.btnBlue{ background:var(--blue); color:#fff; }
 .btnDanger{ background:var(--danger); color:#fff; }
 .btn:disabled{ opacity:.55; cursor:not-allowed; }
 
@@ -72,7 +71,7 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
     <div class="card">
       <h1>Control de sesión</h1>
       <p class="sub">
-        Entrada con QR dinámico (cambia cada 3 min) + salida con QR de 90s. Al terminar, usa <b>Finalizar mentoría</b> para registrar hora de cierre (sin generar QR).
+        Entrada con QR dinámico (cambia cada 3 min). Al terminar, usa <b>Finalizar mentoría</b> para registrar hora de cierre.
       </p>
 
       <label>Campus</label>
@@ -97,7 +96,6 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
 
       <div class="btnRow">
         <button id="btnGen" class="btn btnPrimary">Generar QR de entrada</button>
-        <button id="btnCheckout" class="btn btnBlue" disabled>Activar QR de salida</button>
         <button id="btnEnd" class="btn btnDanger" disabled>Finalizar mentoría</button>
       </div>
 
@@ -120,21 +118,6 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
         </div>
       </div>
 
-      <!-- Salida -->
-      <div class="box" id="outbox" style="margin-top:12px;">
-        <div class="kv">Salida (válido por 90s)</div>
-        <div class="row" style="margin-top:10px;">
-          <img id="qrOut" width="190" height="190" alt="QR salida" />
-          <div>
-            <div class="kv">Token salida</div>
-            <div class="code" id="outToken">------</div>
-            <div class="smalllink">Link: <span id="outLink"></span></div>
-          </div>
-        </div>
-        <div class="timer" id="outTimer">Expira en: -- s</div>
-        <div class="note">(La salida sigue en 90s.)</div>
-      </div>
-
       <!-- Resumen para reporte -->
       <div class="summary" id="summary">
         <div class="title">✅ Mentoría finalizada</div>
@@ -149,7 +132,6 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
 
 <script>
 const TOKEN_ROTATION_SECONDS = 180; // 3 minutos (entrada)
-const CHECKOUT_SECONDS = 90;        // salida
 
 const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
@@ -158,7 +140,6 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // UI
 const msg = document.getElementById("msg");
 const btnGen = document.getElementById("btnGen");
-const btnCheckout = document.getElementById("btnCheckout");
 const btnEnd = document.getElementById("btnEnd");
 
 const inbox = document.getElementById("inbox");
@@ -166,12 +147,6 @@ const qrIn = document.getElementById("qrIn");
 const inToken = document.getElementById("inToken");
 const inLink = document.getElementById("inLink");
 const inTimer = document.getElementById("inTimer");
-
-const outbox = document.getElementById("outbox");
-const qrOut = document.getElementById("qrOut");
-const outToken = document.getElementById("outToken");
-const outLink = document.getElementById("outLink");
-const outTimer = document.getElementById("outTimer");
 
 // Resumen
 const summaryBox = document.getElementById("summary");
@@ -197,9 +172,6 @@ let inTick = null;
 let inRotate = null;
 let inCountdown = TOKEN_ROTATION_SECONDS;
 
-let outTick = null;
-let outCountdown = CHECKOUT_SECONDS;
-
 function setBusy(v){
   busy = v;
   btnGen.disabled = v || false;
@@ -220,20 +192,12 @@ function renderIn(url){
   qrIn.src = qrUrl(url, 190);
   inLink.textContent = url;
 }
-function renderOut(url){
-  qrOut.src = qrUrl(url, 190);
-  outLink.textContent = url;
-}
 
 function stopInTimers(){
   if (inTick) clearInterval(inTick);
   if (inRotate) clearInterval(inRotate);
   inTick = null;
   inRotate = null;
-}
-function stopOutTimers(){
-  if (outTick) clearInterval(outTick);
-  outTick = null;
 }
 
 function saveActiveToLS(payload){
@@ -251,32 +215,24 @@ function readActiveFromLS(){
     return null;
   }
 }
-
 function saveLastClosedToLS(payload){
   localStorage.setItem(LS_LAST_CLOSED, JSON.stringify(payload));
 }
 
 function setUIForActive(){
   inbox.style.display = "block";
-  btnCheckout.disabled = false;
   btnEnd.disabled = false;
   summaryBox.style.display = "none";
 }
 
 function resetUIForNew(){
   stopInTimers();
-  stopOutTimers();
-  outbox.style.display = "none";
   inbox.style.display = "none";
   summaryBox.style.display = "none";
-  btnCheckout.disabled = true;
   btnEnd.disabled = true;
   inToken.textContent = "------";
   inLink.textContent = "";
-  outToken.textContent = "------";
-  outLink.textContent = "";
   inTimer.textContent = "Próxima rotación en: -- s";
-  outTimer.textContent = "Expira en: -- s";
 }
 
 async function setNewInToken(){
@@ -318,45 +274,6 @@ function startInTimers(){
   }, TOKEN_ROTATION_SECONDS*1000);
 }
 
-async function activateCheckoutQR(){
-  if (!sessionId || closed || busy) return;
-
-  setBusy(true);
-  try{
-    const token = rand10();
-    const expira = new Date(Date.now() + CHECKOUT_SECONDS*1000).toISOString();
-
-    const { error } = await db
-      .from("sesiones")
-      .update({ token_salida: token, token_salida_expira_en: expira })
-      .eq("id", sessionId);
-
-    if (error) {
-      setMsg("Error activando salida: " + error.message, "crimson");
-      return;
-    }
-
-    const url = `${location.origin}/checkout.html?token=${encodeURIComponent(token)}`;
-    outToken.textContent = token;
-    renderOut(url);
-    outbox.style.display = "block";
-
-    outCountdown = CHECKOUT_SECONDS;
-    outTimer.textContent = `Expira en: ${outCountdown} s`;
-
-    stopOutTimers();
-    outTick = setInterval(() => {
-      outCountdown = Math.max(0, outCountdown - 1);
-      outTimer.textContent = `Expira en: ${outCountdown} s`;
-      if (outCountdown <= 0) clearInterval(outTick);
-    }, 1000);
-
-    setMsg(`✅ QR de salida activo (${CHECKOUT_SECONDS}s).`, "green");
-  } finally {
-    setBusy(false);
-  }
-}
-
 function fmtLocal(iso){
   if (!iso) return "--";
   const d = new Date(iso);
@@ -390,10 +307,8 @@ async function endMentoria(){
 
   setBusy(true);
   try{
-    // Cierre directo: NO genera QR, solo guarda termino_en e invalida tokens
     closed = true;
     stopInTimers();
-    stopOutTimers();
 
     const nowIso = new Date().toISOString();
 
@@ -428,18 +343,6 @@ async function endMentoria(){
       return;
     }
 
-    // UI: apaga todo (sin QR de salida al final)
-    outbox.style.display = "none";
-    outToken.textContent = "------";
-    outLink.textContent = "";
-    outTimer.textContent = "Expira en: -- s";
-
-    inToken.textContent = "CERRADA";
-    inTimer.textContent = "Sesión cerrada.";
-
-    btnEnd.disabled = true;
-    btnCheckout.disabled = true;
-
     // Estado para reporte
     const saved = readActiveFromLS();
     const startIso = sessionCreatedAtIso || saved?.created_at || null;
@@ -457,7 +360,12 @@ async function endMentoria(){
 
     clearActiveFromLS();
 
-    setMsg("✅ Mentoría finalizada. Se registró hora de término (sin generar QR).", "green");
+    setMsg("✅ Mentoría finalizada. Se registró hora de término.", "green");
+
+    inToken.textContent = "CERRADA";
+    inTimer.textContent = "Sesión cerrada.";
+    btnEnd.disabled = true;
+
     showSummary(startIso, nowIso);
   } finally {
     setBusy(false);
@@ -473,7 +381,7 @@ async function recoverIfPossible(){
 
   const { data, error } = await db
     .from("sesiones")
-    .select("id, created_at, termino_en, token_actual, token_expira_en, token_salida, token_salida_expira_en")
+    .select("id, created_at, termino_en, token_actual, token_expira_en")
     .eq("id", saved.sessionId)
     .single();
 
@@ -494,8 +402,6 @@ async function recoverIfPossible(){
     inbox.style.display = "block";
     inToken.textContent = "CERRADA";
     inTimer.textContent = "Sesión cerrada.";
-    outbox.style.display = "none";
-    btnCheckout.disabled = true;
     btnEnd.disabled = true;
 
     showSummary(sessionCreatedAtIso, data.termino_en);
@@ -504,7 +410,6 @@ async function recoverIfPossible(){
 
   const now = Date.now();
   const inExp = data.token_expira_en ? Date.parse(data.token_expira_en) : 0;
-  const outExp = data.token_salida_expira_en ? Date.parse(data.token_salida_expira_en) : 0;
 
   sessionId = data.id;
   sessionCreatedAtIso = data.created_at || saved.created_at || null;
@@ -524,25 +429,6 @@ async function recoverIfPossible(){
   }
   startInTimers();
 
-  if (data.token_salida && outExp > now){
-    const url = `${location.origin}/checkout.html?token=${encodeURIComponent(data.token_salida)}`;
-    outToken.textContent = data.token_salida;
-    renderOut(url);
-    outbox.style.display = "block";
-    outCountdown = Math.max(0, Math.ceil((outExp - now)/1000));
-    outTimer.textContent = `Expira en: ${outCountdown} s`;
-
-    stopOutTimers();
-    outTick = setInterval(() => {
-      outCountdown = Math.max(0, outCountdown - 1);
-      outTimer.textContent = `Expira en: ${outCountdown} s`;
-      if (outCountdown <= 0) clearInterval(outTick);
-    }, 1000);
-  } else {
-    outbox.style.display = "none";
-  }
-
-  btnCheckout.disabled = false;
   btnEnd.disabled = false;
 
   setMsg("✅ Sesión recuperada. QR de entrada activo.", "green");
@@ -614,7 +500,7 @@ btnGen.addEventListener("click", async () => {
   resetUIForNew();
 
   const codigo6 = String(Math.floor(100000 + Math.random() * 900000));
-  const expira10 = new Date(Date.now() + 10*60*1000).toISOString(); // (lo dejamos igual por compatibilidad)
+  const expira10 = new Date(Date.now() + 10*60*1000).toISOString(); // lo dejamos igual por compatibilidad
 
   const { data, error } = await db
     .from("sesiones")
@@ -652,12 +538,8 @@ btnGen.addEventListener("click", async () => {
   setBusy(false);
 });
 
-btnCheckout.addEventListener("click", async () => {
-  await activateCheckoutQR();
-});
-
 btnEnd.addEventListener("click", async () => {
-  const ok = confirm("¿Finalizar mentoría? Esto registrará la hora de término e invalidará QR de entrada/salida (sin generar QR).");
+  const ok = confirm("¿Finalizar mentoría? Esto registrará la hora de término e invalidará el QR.");
   if (ok) await endMentoria();
 });
 
