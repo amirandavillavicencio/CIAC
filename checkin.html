@@ -1,74 +1,140 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CIAC Check-In · Marcar asistencia</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CIAC Check-In · Tutor</title>
 
-  <link rel="icon" href="data:,">
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-  <style>
-    :root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; --muted:#6b7280; --line:#e5e7eb; }
-    body{ margin:0; font-family:Arial, sans-serif; background:var(--bg); color:#111827; }
-    .topbar{ background:var(--blue); color:#fff; padding:16px 22px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    .brand{ font-weight:900; letter-spacing:.2px; }
-    a{ color:#fff; text-decoration:none; font-weight:900; }
-    .wrap{ max-width:440px; margin:22px auto; padding:0 14px; }
-    .card{ background:var(--card); border-radius:14px; box-shadow:0 8px 20px rgba(0,0,0,.08); border:1px solid var(--line); padding:18px; }
-    h1{ margin:0 0 6px; font-size:18px; }
-    .sub{ margin:0 0 14px; color:var(--muted); font-size:13px; line-height:1.35; }
-    label{ display:block; font-size:12px; color:var(--muted); margin-top:10px; }
-    input{ width:100%; padding:10px; margin-top:4px; border-radius:10px; border:1px solid #d1d5db; box-sizing:border-box; background:#fff; }
-    button{ width:100%; margin-top:14px; padding:11px; border-radius:10px; border:0; background:var(--blue); color:#fff; font-weight:900; cursor:pointer; }
-    button:disabled{ opacity:.55; cursor:not-allowed; }
-    .msg{ margin-top:10px; font-size:13px; min-height:18px; }
-    .hint{ margin-top:12px; background:#ecfeff; border:1px solid #a5f3fc; padding:12px; border-radius:12px; font-size:12px; color:#0f172a; line-height:1.35; }
+<style>
+:root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; --muted:#6b7280; --line:#e5e7eb; --cta:#f3c623; --danger:#b91c1c; }
+body{ margin:0; font-family:Arial, sans-serif; background:var(--bg); color:#111827; }
+.topbar{ background:var(--blue); color:#fff; padding:16px 22px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.brand{ font-weight:900; letter-spacing:.2px; }
+a{ color:#fff; text-decoration:none; font-weight:900; }
 
-    .tokenOk{ margin-top:10px; background:#ecfdf5; border:1px solid #a7f3d0; padding:10px; border-radius:12px; font-size:12px; color:#065f46; display:none; }
-    .warn{ margin-top:10px; background:#fffbeb; border:1px solid #fcd34d; padding:10px; border-radius:12px; font-size:12px; color:#92400e; display:none; }
-    .linkBtn{ margin-top:10px; background:transparent; color:var(--blue); border:0; padding:0; font-weight:900; cursor:pointer; }
-  </style>
+.wrap{ max-width:560px; margin:22px auto; padding:0 14px; }
+.card{ background:var(--card); border-radius:14px; box-shadow:0 8px 20px rgba(0,0,0,.08); border:1px solid var(--line); padding:18px; }
+
+h1{ margin:0 0 6px; font-size:18px; }
+.sub{ margin:0 0 14px; color:var(--muted); font-size:13px; line-height:1.35; }
+label{ display:block; font-size:12px; color:var(--muted); margin-top:10px; }
+input,select{ width:100%; padding:10px; margin-top:4px; border-radius:10px; border:1px solid #d1d5db; box-sizing:border-box; background:#fff; }
+
+.btnRow{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+.btn{ flex:1 1 160px; padding:11px; border-radius:10px; border:0; font-weight:900; cursor:pointer; }
+.btnPrimary{ background:var(--cta); color:#111827; }
+.btnDanger{ background:var(--danger); color:#fff; }
+.btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+.msg{ margin-top:10px; font-size:13px; min-height:18px; }
+
+.box{
+  margin-top:14px;
+  display:none;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  background:#fff;
+}
+.row{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.kv{ font-size:12px; color:var(--muted); }
+.code{ font-size:22px; font-weight:900; letter-spacing:.5px; margin:6px 0 0; word-break:break-all; }
+.timer{ margin-top:10px; font-size:12px; color:#0f172a; background:#ecfeff; border:1px solid #a5f3fc; padding:10px; border-radius:12px; }
+.smalllink{ margin-top:8px; font-size:12px; color:var(--muted); word-break:break-all; }
+
+img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:#fff; }
+.note{ margin-top:10px; font-size:12px; color:var(--muted); line-height:1.35; }
+
+.summary{
+  margin-top:12px;
+  display:none;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  background:#fff;
+}
+.summary .title{ font-weight:900; font-size:13px; margin:0 0 8px; }
+.summary .line{ font-size:12px; color:#111827; margin:4px 0; }
+.summary .muted{ color:var(--muted); }
+</style>
 </head>
 
 <body>
   <div class="topbar">
-    <div class="brand">CIAC Check-In · Asistencia</div>
+    <div class="brand">CIAC Check-In · Tutor</div>
     <a href="index.html">🏠 Inicio</a>
   </div>
 
   <div class="wrap">
     <div class="card">
-      <h1>Marcar asistencia</h1>
-      <p class="sub">Escanea el QR en sala. Luego completa tus datos.</p>
+      <h1>Control de sesión</h1>
+      <p class="sub">
+        Entrada con QR fijo (no expira). Al terminar, usa <b>Finalizar mentoría</b> para registrar hora de cierre.
+      </p>
 
-      <label>Nombre y apellido</label>
-      <input id="nombre" placeholder="Ej: Nombre Apellido" autocomplete="name" />
+      <label>Campus</label>
+      <select id="campus">
+        <option>Casa Central</option>
+        <option>San Joaquín</option>
+        <option selected>Vitacura</option>
+      </select>
 
-      <label>Correo institucional</label>
-      <input id="correo" type="email" placeholder="nombre@usm.cl" autocomplete="email" />
+      <label>Sala</label>
+      <input id="sala" placeholder="Ej: CIAC-1" value="ciac" />
 
-      <!-- Estado token desde QR -->
-      <div class="tokenOk" id="tokenOk">✅ Token cargado desde el QR.</div>
+      <label>Área (tutoría)</label>
+      <select id="area">
+        <option value="" selected>Selecciona…</option>
+        <option value="Matemática">Matemática</option>
+        <option value="Física">Física</option>
+        <option value="Química">Química</option>
+        <option value="Programación">Programación</option>
+      </select>
 
-      <!-- Advertencia (no bloqueante) por expira_en -->
-      <div class="warn" id="warnExpira">
-        ⚠️ Advertencia: esta sesión aparece fuera de ventana (posible sesión antigua), pero se permitirá el registro.
+      <label>Hora inicio</label>
+      <select id="horaInicio"></select>
+
+      <label>Nombre tutor</label>
+      <input id="tutorNombre" placeholder="Ej: Nombre Apellido" autocomplete="name" />
+
+      <label>Correo tutor</label>
+      <input id="tutor" type="email" placeholder="tutor@usm.cl" value="andres.mirandav@usm.cl" />
+
+      <div class="btnRow">
+        <button id="btnGen" class="btn btnPrimary">Generar QR de entrada</button>
+        <button id="btnEnd" class="btn btnDanger" disabled>Finalizar mentoría</button>
       </div>
 
-      <!-- Token manual (solo si no viene en URL o si el usuario lo activa) -->
-      <div id="tokenWrap">
-        <label>Token (solo si no viene por QR)</label>
-        <input id="token" placeholder="(se completa automáticamente)" />
-        <button class="linkBtn" id="btnHideToken" type="button" style="display:none;">Ocultar token</button>
-      </div>
-
-      <button id="btn">Registrar</button>
       <div class="msg" id="msg"></div>
 
-      <div class="hint">
-        Puedes registrar desde un celular compartido. Se permite <b>1 registro por correo</b> en cada sesión.
+      <div class="box" id="inbox">
+        <div class="kv">Entrada (token fijo)</div>
+        <div class="row" style="margin-top:10px;">
+          <img id="qrIn" width="190" height="190" alt="QR entrada" />
+          <div>
+            <div class="kv">Token entrada</div>
+            <div class="code" id="inToken">------</div>
+            <div class="smalllink">Link: <span id="inLink"></span></div>
+          </div>
+        </div>
+        <div class="timer" id="inTimer">Token activo mientras la sesión esté abierta.</div>
+        <div class="note">
+          Recomendación: no reenviar el link fuera de la sala. Mientras la sesión esté abierta, el QR seguirá funcionando.
+        </div>
       </div>
+
+      <div class="summary" id="summary">
+        <div class="title">✅ Mentoría finalizada</div>
+        <div class="line"><span class="muted">Área:</span> <span id="sumArea">--</span></div>
+        <div class="line"><span class="muted">Tutor:</span> <span id="sumTutor">--</span></div>
+        <div class="line"><span class="muted">Inicio:</span> <span id="sumInicio">--</span></div>
+        <div class="line"><span class="muted">Término:</span> <span id="sumTermino">--</span></div>
+        <div class="line"><span class="muted">Duración:</span> <span id="sumDuracion">--</span></div>
+        <div class="line muted">Esta información se usa para el reporte.</div>
+      </div>
+
     </div>
   </div>
 
@@ -77,146 +143,426 @@ const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// UI
 const msg = document.getElementById("msg");
-const nombreEl = document.getElementById("nombre");
-const correoEl = document.getElementById("correo");
-const tokenEl = document.getElementById("token");
-const tokenWrap = document.getElementById("tokenWrap");
-const tokenOk = document.getElementById("tokenOk");
-const warnExpira = document.getElementById("warnExpira");
-const btn = document.getElementById("btn");
-const btnHideToken = document.getElementById("btnHideToken");
+const btnGen = document.getElementById("btnGen");
+const btnEnd = document.getElementById("btnEnd");
 
-// Token desde querystring
-const params = new URLSearchParams(location.search);
-const qpToken = params.get("token");
+const inbox = document.getElementById("inbox");
+const qrIn = document.getElementById("qrIn");
+const inToken = document.getElementById("inToken");
+const inLink = document.getElementById("inLink");
+const inTimer = document.getElementById("inTimer");
 
-function setStatus(text, color="#111827"){
+// Resumen
+const summaryBox = document.getElementById("summary");
+const sumArea = document.getElementById("sumArea");
+const sumTutor = document.getElementById("sumTutor");
+const sumInicio = document.getElementById("sumInicio");
+const sumTermino = document.getElementById("sumTermino");
+const sumDuracion = document.getElementById("sumDuracion");
+
+// Inputs
+const areaEl = document.getElementById("area");
+const tutorNombreEl = document.getElementById("tutorNombre");
+const horaInicioEl = document.getElementById("horaInicio");
+
+// State
+const LS_KEY = "ciac_tutor_active_session";
+const LS_LAST_CLOSED = "ciac_tutor_last_closed";
+const LS_TUTOR_PROFILE = "ciac_tutor_profile";
+
+let sessionId = null;
+let closed = false;
+let busy = false;
+let sessionCreatedAtIso = null;
+
+function setBusy(v){
+  busy = v;
+  btnGen.disabled = v || false;
+}
+function setMsg(text, color="#111827"){
   msg.style.color = color;
   msg.textContent = text;
 }
 
-function showWarnExpira(v){
-  warnExpira.style.display = v ? "block" : "none";
+function rand10(){
+  const r = (crypto?.randomUUID ? crypto.randomUUID().replace(/-/g,'') : (Date.now()+''+Math.random()).replace('.',''));
+  return r.slice(0, 10);
+}
+function qrUrl(url, size=190){
+  return "https://api.qrserver.com/v1/create-qr-code/?size="+size+"x"+size+"&data=" + encodeURIComponent(url);
+}
+function renderIn(url){
+  qrIn.src = qrUrl(url, 190);
+  inLink.textContent = url;
 }
 
-// UX: si viene token por URL, lo cargamos y ocultamos el input para que NO pidan token manual
-if (qpToken) {
-  tokenEl.value = qpToken;
-  tokenWrap.style.display = "none";
-  tokenOk.style.display = "block";
-} else {
-  tokenWrap.style.display = "block";
-  tokenOk.style.display = "none";
+function saveActiveToLS(payload){
+  localStorage.setItem(LS_KEY, JSON.stringify(payload));
+}
+function clearActiveFromLS(){
+  localStorage.removeItem(LS_KEY);
+}
+function readActiveFromLS(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  }catch{
+    return null;
+  }
+}
+function saveLastClosedToLS(payload){
+  localStorage.setItem(LS_LAST_CLOSED, JSON.stringify(payload));
 }
 
-// Toggle para casos raros: permitir ver/pegar token manual aunque venga por QR
-tokenOk.addEventListener("click", () => {
-  tokenWrap.style.display = "block";
-  btnHideToken.style.display = "inline";
-});
-btnHideToken.addEventListener("click", () => {
-  if (qpToken) {
-    tokenWrap.style.display = "none";
-    btnHideToken.style.display = "none";
-  }
-});
+function saveTutorProfile(){
+  const profile = {
+    tutor_nombre: (tutorNombreEl.value || "").trim(),
+    area: areaEl.value || ""
+  };
+  localStorage.setItem(LS_TUTOR_PROFILE, JSON.stringify(profile));
+}
+function loadTutorProfile(){
+  try{
+    const raw = localStorage.getItem(LS_TUTOR_PROFILE);
+    if (!raw) return;
+    const p = JSON.parse(raw);
+    if (p?.tutor_nombre && !tutorNombreEl.value) tutorNombreEl.value = p.tutor_nombre;
+    if (p?.area && !areaEl.value) areaEl.value = p.area;
+  }catch{}
+}
 
-btn.addEventListener("click", async () => {
-  btn.disabled = true;
-  showWarnExpira(false);
-  setStatus("Validando…");
+function setUIForActive(){
+  inbox.style.display = "block";
+  btnEnd.disabled = false;
+  summaryBox.style.display = "none";
+}
 
-  const nombre_completo = (nombreEl.value || "").trim();
-  const correo = (correoEl.value || "").trim().toLowerCase();
-  const token = (tokenEl.value || "").trim();
+function resetUIForNew(){
+  inbox.style.display = "none";
+  summaryBox.style.display = "none";
+  btnEnd.disabled = true;
+  inToken.textContent = "------";
+  inLink.textContent = "";
+  inTimer.textContent = "Token activo mientras la sesión esté abierta.";
+}
 
-  // Requerido: nombre y apellido (sin validador estricto)
-  if (!nombre_completo) {
-    setStatus("Completa tu nombre y apellido.", "crimson");
-    btn.disabled = false;
+async function setInTokenOnce(){
+  if (!sessionId || closed) return;
+
+  const token = rand10();
+
+  const { error } = await db
+    .from("sesiones")
+    .update({
+      token_actual: token,
+      token_expira_en: null
+    })
+    .eq("id", sessionId);
+
+  if (error) {
+    setMsg("Error actualizando token entrada: " + error.message, "crimson");
     return;
   }
 
-  // Validador correo USM
-  if (!correo.endsWith("@usm.cl")) {
-    setStatus("Ingresa tu correo institucional @usm.cl", "crimson");
-    btn.disabled = false;
-    return;
-  }
+  const url = `${location.origin}/checkin.html?token=${encodeURIComponent(token)}`;
+  inToken.textContent = token;
+  renderIn(url);
+  inTimer.textContent = "Token activo mientras la sesión esté abierta.";
+}
 
-  if (!token) {
-    setStatus("Escanea el QR en sala. Si entraste sin QR, pega el token.", "crimson");
-    btn.disabled = false;
-    return;
-  }
+function fmtLocal(iso){
+  if (!iso) return "--";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleString("es-CL", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", second:"2-digit" });
+}
 
-  // Buscar sesión por token actual (RPC get_sesion_por_token)
-  const { data: rows, error: e1 } = await db
-    .rpc("get_sesion_por_token", { p_token: token });
+function durationText(startIso, endIso){
+  const a = Date.parse(startIso || "");
+  const b = Date.parse(endIso || "");
+  if (!a || !b || isNaN(a) || isNaN(b) || b < a) return "--";
+  let s = Math.floor((b - a) / 1000);
+  const h = Math.floor(s / 3600); s -= h*3600;
+  const m = Math.floor(s / 60); s -= m*60;
+  const parts = [];
+  if (h) parts.push(`${h}h`);
+  if (m || h) parts.push(`${m}m`);
+  parts.push(`${s}s`);
+  return parts.join(" ");
+}
 
-  if (e1) {
-    setStatus("Error: " + e1.message, "crimson");
-    btn.disabled = false;
-    return;
-  }
+function showSummary(area, tutorNombre, startIso, endIso){
+  sumArea.textContent = area || "--";
+  sumTutor.textContent = tutorNombre || "--";
+  sumInicio.textContent = fmtLocal(startIso);
+  sumTermino.textContent = fmtLocal(endIso);
+  sumDuracion.textContent = durationText(startIso, endIso);
+  summaryBox.style.display = "block";
+}
 
-  const sesion = (rows && rows.length) ? rows[0] : null;
+async function endMentoria(){
+  if (!sessionId || busy) return;
 
-  if (!sesion) {
-    setStatus("Token inválido. Escanea el QR actualizado en sala.", "crimson");
-    btn.disabled = false;
-    return;
-  }
+  setBusy(true);
+  try{
+    closed = true;
 
-  // ✅ Bloqueo real: sesión ya cerrada
-  if (sesion.termino_en) {
-    setStatus("Sesión cerrada. Pide al tutor iniciar una nueva sesión.", "crimson");
-    btn.disabled = false;
-    return;
-  }
+    const nowIso = new Date().toISOString();
 
-  // ⚠️ NO bloquear por expira_en: solo advertir
-  if (sesion.expira_en && (new Date() > new Date(sesion.expira_en))) {
-    showWarnExpira(true);
-  }
+    let { error } = await db
+      .from("sesiones")
+      .update({
+        termino_en: nowIso,
+        token_actual: null,
+        token_expira_en: nowIso,
+        token_salida: null,
+        token_salida_expira_en: nowIso
+      })
+      .eq("id", sessionId);
 
-  // ✅ Bloqueo real: token puntual expirado (3 min)
-  if (!sesion.token_expira_en || (new Date() > new Date(sesion.token_expira_en))) {
-    setStatus("Token expirado. Escanea el QR actualizado en sala.", "crimson");
-    btn.disabled = false;
-    return;
-  }
+    if (error && (error.message || "").toLowerCase().includes("termino_en")) {
+      const r2 = await db
+        .from("sesiones")
+        .update({
+          token_actual: null,
+          token_expira_en: nowIso,
+          token_salida: null,
+          token_salida_expira_en: nowIso
+        })
+        .eq("id", sessionId);
+      error = r2.error || null;
+    }
 
-  // Insert: 1 por correo por sesión (UNIQUE (sesion_id, correo_alumno))
-  const { error: e2 } = await db
-    .from("asistencias_v2")
-    .insert([{
-      sesion_id: sesion.id,
-      correo_alumno: correo,
-      nombre_completo
-    }]);
-
-  if (e2) {
-    const m = (e2.message || "").toLowerCase();
-    const code = (e2.code || "");
-    if (code === "23505" || m.includes("duplicate") || m.includes("unique")) {
-      setStatus("ℹ️ Este correo ya está registrado en esta sesión.", "crimson");
-      btn.disabled = false;
+    if (error) {
+      setMsg("Error al finalizar mentoría: " + error.message, "crimson");
+      closed = false;
       return;
     }
-    setStatus("Error: " + e2.message, "crimson");
-    btn.disabled = false;
+
+    const saved = readActiveFromLS();
+    const startIso = sessionCreatedAtIso || saved?.created_at || null;
+
+    const tutorNombre = (tutorNombreEl.value || "").trim();
+    const area = areaEl.value || "";
+
+    saveLastClosedToLS({
+      sesion_id: sessionId,
+      campus: saved?.campus,
+      sala: saved?.sala,
+      tipo: saved?.tipo,
+      bloque: saved?.bloque,
+      tutor_correo: saved?.tutor_correo,
+      tutor_nombre: tutorNombre,
+      area: area,
+      inicio_real: startIso,
+      termino_en: nowIso
+    });
+
+    clearActiveFromLS();
+
+    setMsg("✅ Mentoría finalizada. Se registró hora de término.", "green");
+
+    inToken.textContent = "CERRADA";
+    inTimer.textContent = "Sesión cerrada.";
+    btnEnd.disabled = true;
+
+    showSummary(area, tutorNombre, startIso, nowIso);
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function recoverIfPossible(){
+  const saved = readActiveFromLS();
+  if (!saved?.sessionId) return;
+
+  setMsg("Recuperando sesión activa…");
+  resetUIForNew();
+
+  const { data, error } = await db
+    .from("sesiones")
+    .select("id, created_at, termino_en, token_actual")
+    .eq("id", saved.sessionId)
+    .single();
+
+  if (error || !data){
+    clearActiveFromLS();
+    setMsg("No se pudo recuperar la sesión anterior (ya no existe o no hay acceso).", "crimson");
     return;
   }
 
-  setStatus("✅ Asistencia registrada.", "green");
+  // Si ya fue finalizada
+  if (data.termino_en){
+    sessionCreatedAtIso = data.created_at || saved.created_at || null;
+    clearActiveFromLS();
+    sessionId = data.id;
+    closed = true;
 
-  // Para celular compartido: limpiar campos para el siguiente alumno
-  nombreEl.value = "";
-  correoEl.value = "";
-  btn.disabled = false;
+    setMsg("ℹ️ Esta sesión ya estaba finalizada.", "#111827");
+    inbox.style.display = "block";
+    inToken.textContent = "CERRADA";
+    inTimer.textContent = "Sesión cerrada.";
+    btnEnd.disabled = true;
+
+    const tutorNombre = (tutorNombreEl.value || "").trim();
+    const area = areaEl.value || "";
+    showSummary(area, tutorNombre, sessionCreatedAtIso, data.termino_en);
+    return;
+  }
+
+  sessionId = data.id;
+  sessionCreatedAtIso = data.created_at || saved.created_at || null;
+  closed = false;
+
+  setUIForActive();
+
+  if (data.token_actual){
+    const url = `${location.origin}/checkin.html?token=${encodeURIComponent(data.token_actual)}`;
+    inToken.textContent = data.token_actual;
+    renderIn(url);
+    inTimer.textContent = "Token activo mientras la sesión esté abierta.";
+  } else {
+    await setInTokenOnce();
+  }
+
+  btnEnd.disabled = false;
+  setMsg("✅ Sesión recuperada. QR de entrada activo.", "green");
+}
+
+/* Horario simple */
+function pad2(n){ return String(n).padStart(2,'0'); }
+function buildTimes(startHH=8, endHH=22, stepMin=15){
+  const out = [];
+  for (let h = startHH; h <= endHH; h++){
+    for (let m = 0; m < 60; m += stepMin){
+      if (h === endHH && m > 0) break;
+      out.push(`${pad2(h)}:${pad2(m)}`);
+    }
+  }
+  return out;
+}
+const TIMES = buildTimes(8, 22, 15);
+function fillSelect(selectEl, values){
+  selectEl.innerHTML = "";
+  for (const v of values){
+    const o = document.createElement("option");
+    o.value = v;
+    o.textContent = v;
+    selectEl.appendChild(o);
+  }
+}
+function initHorario(){
+  fillSelect(horaInicioEl, TIMES);
+  horaInicioEl.value = "10:00";
+}
+function getBloqueValue(){
+  return horaInicioEl.value;
+}
+
+btnGen.addEventListener("click", async () => {
+  if (busy) return;
+
+  const saved = readActiveFromLS();
+  if (saved?.sessionId){
+    await recoverIfPossible();
+    return;
+  }
+
+  setMsg("Creando sesión…");
+  setBusy(true);
+
+  const campus = document.getElementById("campus").value;
+  const sala = document.getElementById("sala").value.trim();
+  const area = areaEl.value || "";
+  const bloque = getBloqueValue();
+  const tutorCorreo = document.getElementById("tutor").value.trim().toLowerCase();
+  const tutorNombre = (tutorNombreEl.value || "").trim();
+
+  if (!tutorCorreo.endsWith("@usm.cl")) {
+    setMsg("Ingresa un correo tutor @usm.cl", "crimson");
+    setBusy(false);
+    return;
+  }
+  if (!tutorNombre){
+    setMsg("Completa el nombre del tutor.", "crimson");
+    setBusy(false);
+    return;
+  }
+  if (!area){
+    setMsg("Selecciona el área (tutoría).", "crimson");
+    setBusy(false);
+    return;
+  }
+  if (!sala || !bloque){
+    setMsg("Completa Sala y Hora inicio.", "crimson");
+    setBusy(false);
+    return;
+  }
+
+  saveTutorProfile();
+
+  closed = false;
+  sessionId = null;
+  sessionCreatedAtIso = null;
+  resetUIForNew();
+
+  const codigo6 = String(Math.floor(100000 + Math.random() * 900000));
+
+  const { data, error } = await db
+    .from("sesiones")
+    .insert([{
+      campus,
+      sala,
+      tipo: area,
+      bloque,
+      tutor_correo: tutorCorreo,
+      codigo6
+    }])
+    .select("id, created_at")
+    .single();
+
+  if (error) {
+    setMsg("Error crear sesión: " + error.message, "crimson");
+    setBusy(false);
+    return;
+  }
+
+  sessionId = data.id;
+  sessionCreatedAtIso = data.created_at || new Date().toISOString();
+  setUIForActive();
+
+  saveActiveToLS({
+    sessionId,
+    campus,
+    sala,
+    tipo: area,
+    bloque,
+    tutor_correo: tutorCorreo,
+    tutor_nombre: tutorNombre,
+    created_at: sessionCreatedAtIso
+  });
+
+  setMsg("✅ Sesión creada. QR de entrada activo.", "green");
+
+  await setInTokenOnce();
+
+  setBusy(false);
+});
+
+btnEnd.addEventListener("click", async () => {
+  const ok = confirm("¿Finalizar mentoría? Esto registrará la hora de término e invalidará el QR.");
+  if (ok) await endMentoria();
+});
+
+window.addEventListener("load", async () => {
+  initHorario();
+  loadTutorProfile();
+  await recoverIfPossible();
 });
 </script>
+
 </body>
 </html>
