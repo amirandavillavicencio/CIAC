@@ -1,523 +1,152 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CIAC Check-In · Tutor</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CIAC Check-In · Marcar asistencia</title>
 
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <link rel="icon" href="data:,">
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-<style>
-:root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; --muted:#6b7280; --line:#e5e7eb; --cta:#f3c623; --danger:#b91c1c; }
-body{ margin:0; font-family:Arial, sans-serif; background:var(--bg); color:#111827; }
-.topbar{ background:var(--blue); color:#fff; padding:16px 22px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.brand{ font-weight:900; letter-spacing:.2px; }
-a{ color:#fff; text-decoration:none; font-weight:900; }
-
-.wrap{ max-width:560px; margin:22px auto; padding:0 14px; }
-.card{ background:var(--card); border-radius:14px; box-shadow:0 8px 20px rgba(0,0,0,.08); border:1px solid var(--line); padding:18px; }
-
-h1{ margin:0 0 6px; font-size:18px; }
-.sub{ margin:0 0 14px; color:var(--muted); font-size:13px; line-height:1.35; }
-label{ display:block; font-size:12px; color:var(--muted); margin-top:10px; }
-input,select{ width:100%; padding:10px; margin-top:4px; border-radius:10px; border:1px solid #d1d5db; box-sizing:border-box; background:#fff; }
-
-.btnRow{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
-.btn{ flex:1 1 160px; padding:11px; border-radius:10px; border:0; font-weight:900; cursor:pointer; }
-.btnPrimary{ background:var(--cta); color:#111827; }
-.btnBlue{ background:var(--blue); color:#fff; }
-.btnDanger{ background:var(--danger); color:#fff; }
-.btn:disabled{ opacity:.55; cursor:not-allowed; }
-
-.msg{ margin-top:10px; font-size:13px; min-height:18px; }
-
-.box{
-  margin-top:14px;
-  display:none;
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:14px;
-  background:#fff;
-}
-.row{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
-.kv{ font-size:12px; color:var(--muted); }
-.code{ font-size:22px; font-weight:900; letter-spacing:.5px; margin:6px 0 0; word-break:break-all; }
-.timer{ margin-top:10px; font-size:12px; color:#0f172a; background:#ecfeff; border:1px solid #a5f3fc; padding:10px; border-radius:12px; }
-.smalllink{ margin-top:8px; font-size:12px; color:var(--muted); word-break:break-all; }
-
-img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:#fff; }
-.note{ margin-top:10px; font-size:12px; color:var(--muted); line-height:1.35; }
-</style>
+  <style>
+    :root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; --muted:#6b7280; --line:#e5e7eb; }
+    body{ margin:0; font-family:Arial, sans-serif; background:var(--bg); color:#111827; }
+    .topbar{ background:var(--blue); color:#fff; padding:16px 22px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .brand{ font-weight:900; letter-spacing:.2px; }
+    a{ color:#fff; text-decoration:none; font-weight:900; }
+    .wrap{ max-width:440px; margin:22px auto; padding:0 14px; }
+    .card{ background:var(--card); border-radius:14px; box-shadow:0 8px 20px rgba(0,0,0,.08); border:1px solid var(--line); padding:18px; }
+    h1{ margin:0 0 6px; font-size:18px; }
+    .sub{ margin:0 0 14px; color:var(--muted); font-size:13px; line-height:1.35; }
+    label{ display:block; font-size:12px; color:var(--muted); margin-top:10px; }
+    input{ width:100%; padding:10px; margin-top:4px; border-radius:10px; border:1px solid #d1d5db; box-sizing:border-box; background:#fff; }
+    button{ width:100%; margin-top:14px; padding:11px; border-radius:10px; border:0; background:var(--blue); color:#fff; font-weight:900; cursor:pointer; }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
+    .msg{ margin-top:10px; font-size:13px; min-height:18px; }
+    .hint{ margin-top:12px; background:#ecfeff; border:1px solid #a5f3fc; padding:12px; border-radius:12px; font-size:12px; color:#0f172a; line-height:1.35; }
+  </style>
 </head>
 
 <body>
   <div class="topbar">
-    <div class="brand">CIAC Check-In · Tutor</div>
+    <div class="brand">CIAC Check-In · Asistencia</div>
     <a href="index.html">🏠 Inicio</a>
   </div>
 
   <div class="wrap">
     <div class="card">
-      <h1>Control de sesión</h1>
-      <p class="sub">
-        Entrada con QR dinámico (cambia cada 3 min) + salida con QR de 90s. Al terminar, finaliza la sesión para bloquear marcajes.
-      </p>
+      <h1>Marcar asistencia</h1>
+      <p class="sub">Escanea el QR en sala. El token cambia cada 3 min.</p>
 
-      <label>Campus</label>
-      <select id="campus">
-        <option>Casa Central</option>
-        <option>San Joaquín</option>
-        <option selected>Vitacura</option>
-      </select>
+      <label>Correo institucional</label>
+      <input id="correo" type="email" placeholder="nombre@usm.cl" autocomplete="email" />
 
-      <label>Sala</label>
-      <input id="sala" placeholder="Ej: CIAC-1" value="ciac" />
+      <label>Token (si no viene por QR)</label>
+      <input id="token" placeholder="(se completa automáticamente)" />
 
-      <label>Tipo de sesión</label>
-      <input id="tipo" placeholder="Ej: Matemáticas" value="matematicas" />
-
-      <label>Bloque</label>
-      <input id="bloque" placeholder="Ej: 10:00-11:00" value="10:00-11:00" />
-
-      <label>Correo tutor</label>
-      <input id="tutor" type="email" placeholder="tutor@usm.cl" value="andres.mirandav@usm.cl" />
-
-      <div class="btnRow">
-        <button id="btnGen" class="btn btnPrimary">Generar QR de entrada</button>
-        <button id="btnCheckout" class="btn btnBlue" disabled>Activar QR de salida</button>
-        <button id="btnClose" class="btn btnDanger" disabled>Finalizar sesión</button>
-      </div>
-
+      <button id="btn">Registrar</button>
       <div class="msg" id="msg"></div>
 
-      <!-- Entrada -->
-      <div class="box" id="inbox">
-        <div class="kv">Entrada (token cambia cada 3 min)</div>
-        <div class="row" style="margin-top:10px;">
-          <img id="qrIn" width="190" height="190" alt="QR entrada" />
-          <div>
-            <div class="kv">Token entrada</div>
-            <div class="code" id="inToken">------</div>
-            <div class="smalllink">Link: <span id="inLink"></span></div>
-          </div>
-        </div>
-        <div class="timer" id="inTimer">Próxima rotación en: -- s</div>
-        <div class="note">
-          Recomendación: mantén el QR visible en sala. Si alguien reenvía el link, probablemente expirará antes de que lo usen.
-        </div>
+      <div class="hint">
+        Anti-fraude: el token expira rápido y el sistema limita a <b>1 registro por dispositivo</b> en cada sesión.
       </div>
-
-      <!-- Salida -->
-      <div class="box" id="outbox" style="margin-top:12px;">
-        <div class="kv">Salida (válido por 90s)</div>
-        <div class="row" style="margin-top:10px;">
-          <img id="qrOut" width="190" height="190" alt="QR salida" />
-          <div>
-            <div class="kv">Token salida</div>
-            <div class="code" id="outToken">------</div>
-            <div class="smalllink">Link: <span id="outLink"></span></div>
-          </div>
-        </div>
-        <div class="timer" id="outTimer">Expira en: -- s</div>
-        <div class="note">
-          El alumno debe confirmar salida desde el <b>mismo dispositivo</b> que marcó entrada (por device_id).
-        </div>
-      </div>
-
     </div>
   </div>
 
 <script>
-const TOKEN_ROTATION_SECONDS = 180; // 3 minutos
-const CHECKOUT_SECONDS = 90;
-
 const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// UI
 const msg = document.getElementById("msg");
-const btnGen = document.getElementById("btnGen");
-const btnCheckout = document.getElementById("btnCheckout");
-const btnClose = document.getElementById("btnClose");
+const correoEl = document.getElementById("correo");
+const tokenEl = document.getElementById("token");
+const btn = document.getElementById("btn");
 
-const inbox = document.getElementById("inbox");
-const qrIn = document.getElementById("qrIn");
-const inToken = document.getElementById("inToken");
-const inLink = document.getElementById("inLink");
-const inTimer = document.getElementById("inTimer");
+const params = new URLSearchParams(location.search);
+const qpToken = params.get("token");
+if (qpToken) tokenEl.value = qpToken;
 
-const outbox = document.getElementById("outbox");
-const qrOut = document.getElementById("qrOut");
-const outToken = document.getElementById("outToken");
-const outLink = document.getElementById("outLink");
-const outTimer = document.getElementById("outTimer");
-
-// State
-const LS_KEY = "ciac_tutor_active_session";
-let sessionId = null;
-let closed = false;
-let busy = false;
-
-// Timers
-let inTick = null;
-let inRotate = null;
-let inCountdown = TOKEN_ROTATION_SECONDS;
-
-let outTick = null;
-let outCountdown = CHECKOUT_SECONDS;
-
-function setBusy(v){
-  busy = v;
-  btnGen.disabled = v || false;
+function getDeviceId(){
+  let deviceId = localStorage.getItem("ciac_device_id");
+  if (!deviceId) {
+    deviceId = (crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random());
+    localStorage.setItem("ciac_device_id", deviceId);
+  }
+  return deviceId;
 }
 
-function setMsg(text, color="#111827"){
+function setStatus(text, color="#111827"){
   msg.style.color = color;
   msg.textContent = text;
 }
 
-function rand10(){
-  const r = (crypto?.randomUUID ? crypto.randomUUID().replace(/-/g,'') : (Date.now()+''+Math.random()).replace('.',''));
-  return r.slice(0, 10);
-}
+btn.addEventListener("click", async () => {
+  btn.disabled = true;
+  setStatus("Validando…");
 
-function qrUrl(url, size=190){
-  return "https://api.qrserver.com/v1/create-qr-code/?size="+size+"x"+size+"&data=" + encodeURIComponent(url);
-}
+  const correo = correoEl.value.trim().toLowerCase();
+  const token = tokenEl.value.trim();
 
-function renderIn(url){
-  qrIn.src = qrUrl(url, 190);
-  inLink.textContent = url;
-}
-
-function renderOut(url){
-  qrOut.src = qrUrl(url, 190);
-  outLink.textContent = url;
-}
-
-function stopInTimers(){
-  if (inTick) clearInterval(inTick);
-  if (inRotate) clearInterval(inRotate);
-  inTick = null;
-  inRotate = null;
-}
-
-function stopOutTimers(){
-  if (outTick) clearInterval(outTick);
-  outTick = null;
-}
-
-function saveActiveToLS(payload){
-  localStorage.setItem(LS_KEY, JSON.stringify(payload));
-}
-function clearActiveFromLS(){
-  localStorage.removeItem(LS_KEY);
-}
-function readActiveFromLS(){
-  try{
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  }catch{
-    return null;
+  if (!correo.endsWith("@usm.cl")) {
+    setStatus("Ingresa un correo @usm.cl", "crimson");
+    btn.disabled = false;
+    return;
   }
-}
-
-async function fetchSessionById(id){
-  const { data, error } = await db
-    .from("sesiones")
-    .select("id, campus, sala, tipo, bloque, tutor_correo, codigo6, expira_en, token_actual, token_expira_en, token_salida, token_salida_expira_en")
-    .eq("id", id)
-    .single();
-  if (error) return { data:null, error };
-  return { data, error:null };
-}
-
-function setUIForActive(){
-  inbox.style.display = "block";
-  btnCheckout.disabled = false;
-  btnClose.disabled = false;
-}
-
-function resetUIForNew(){
-  stopInTimers();
-  stopOutTimers();
-  outbox.style.display = "none";
-  inbox.style.display = "none";
-  btnCheckout.disabled = true;
-  btnClose.disabled = true;
-  inToken.textContent = "------";
-  inLink.textContent = "";
-  outToken.textContent = "------";
-  outLink.textContent = "";
-  inTimer.textContent = "Próxima rotación en: -- s";
-  outTimer.textContent = "Expira en: -- s";
-}
-
-async function setNewInToken(){
-  if (!sessionId || closed) return;
-
-  const token = rand10();
-  const expira = new Date(Date.now() + TOKEN_ROTATION_SECONDS*1000).toISOString();
-
-  const { error } = await db
-    .from("sesiones")
-    .update({ token_actual: token, token_expira_en: expira })
-    .eq("id", sessionId);
-
-  if (error) {
-    setMsg("Error actualizando token entrada: " + error.message, "crimson");
+  if (!token) {
+    setStatus("Escanea el QR en sala o pega el token.", "crimson");
+    btn.disabled = false;
     return;
   }
 
-  const url = `${location.origin}/checkin.html?token=${encodeURIComponent(token)}`;
-  inToken.textContent = token;
-  renderIn(url);
+  // Buscar sesión por token actual (entrada)
+  const { data: sesion, error: e1 } = await db
+    .from("sesiones")
+    .select("id, token_expira_en")
+    .eq("token_actual", token)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-  inCountdown = TOKEN_ROTATION_SECONDS;
-  inTimer.textContent = `Próxima rotación en: ${TOKEN_ROTATION_SECONDS} s`;
-}
+  if (e1) {
+    setStatus("Error: " + e1.message, "crimson");
+    btn.disabled = false;
+    return;
+  }
+  if (!sesion) {
+    setStatus("Token inválido. Escanea el QR actualizado en sala.", "crimson");
+    btn.disabled = false;
+    return;
+  }
+  if (!sesion.token_expira_en || (new Date() > new Date(sesion.token_expira_en))) {
+    setStatus("Token expirado. Escanea el QR actualizado en sala.", "crimson");
+    btn.disabled = false;
+    return;
+  }
 
-function startInTimers(){
-  stopInTimers();
+  const device_id = getDeviceId();
 
-  inTick = setInterval(() => {
-    if (closed) return;
-    inCountdown = Math.max(0, inCountdown - 1);
-    inTimer.textContent = `Próxima rotación en: ${inCountdown} s`;
-  }, 1000);
+  const { error: e2 } = await db
+    .from("asistencias_v2")
+    .insert([{ sesion_id: sesion.id, correo_alumno: correo, device_id }]);
 
-  inRotate = setInterval(async () => {
-    if (closed) return;
-    await setNewInToken();
-  }, TOKEN_ROTATION_SECONDS*1000);
-}
-
-async function activateCheckoutQR(){
-  if (!sessionId || closed || busy) return;
-
-  setBusy(true);
-  try{
-    const token = rand10();
-    const expira = new Date(Date.now() + CHECKOUT_SECONDS*1000).toISOString();
-
-    const { error } = await db
-      .from("sesiones")
-      .update({ token_salida: token, token_salida_expira_en: expira })
-      .eq("id", sessionId);
-
-    if (error) {
-      setMsg("Error activando salida: " + error.message, "crimson");
+  if (e2) {
+    const m = (e2.message || "").toLowerCase();
+    if (m.includes("duplicate") || (e2.code || "") === "23505") {
+      setStatus("Ya registraste asistencia desde este dispositivo en esta sesión.", "crimson");
+      btn.disabled = false;
       return;
     }
-
-    const url = `${location.origin}/checkout.html?token=${encodeURIComponent(token)}`;
-    outToken.textContent = token;
-    renderOut(url);
-    outbox.style.display = "block";
-
-    outCountdown = CHECKOUT_SECONDS;
-    outTimer.textContent = `Expira en: ${CHECKOUT_SECONDS} s`;
-
-    stopOutTimers();
-    outTick = setInterval(() => {
-      outCountdown = Math.max(0, outCountdown - 1);
-      outTimer.textContent = `Expira en: ${outCountdown} s`;
-      if (outCountdown <= 0) clearInterval(outTick);
-    }, 1000);
-
-    setMsg(`✅ QR de salida activo (${CHECKOUT_SECONDS}s).`, "green");
-  } finally {
-    setBusy(false);
-  }
-}
-
-async function closeSession(){
-  if (!sessionId || busy) return;
-
-  setBusy(true);
-  try{
-    closed = true;
-    stopInTimers();
-    stopOutTimers();
-
-    const now = new Date().toISOString();
-    const { error } = await db
-      .from("sesiones")
-      .update({
-        token_actual: null,
-        token_expira_en: now,
-        token_salida: null,
-        token_salida_expira_en: now
-      })
-      .eq("id", sessionId);
-
-    if (error) {
-      setMsg("Error al finalizar sesión: " + error.message, "crimson");
-      closed = false;
-      return;
-    }
-
-    clearActiveFromLS();
-
-    setMsg("✅ Sesión finalizada. QR inválidos.", "green");
-
-    inToken.textContent = "CERRADA";
-    inTimer.textContent = "Sesión cerrada.";
-    outToken.textContent = "CERRADA";
-    outTimer.textContent = "Sesión cerrada.";
-
-    btnClose.disabled = true;
-    btnCheckout.disabled = true;
-  } finally {
-    setBusy(false);
-  }
-}
-
-async function recoverIfPossible(){
-  const saved = readActiveFromLS();
-  if (!saved?.sessionId) return;
-
-  setMsg("Recuperando sesión activa…");
-  resetUIForNew();
-
-  const { data, error } = await fetchSessionById(saved.sessionId);
-  if (error || !data){
-    clearActiveFromLS();
-    setMsg("No se pudo recuperar la sesión anterior (ya no existe o no hay acceso).", "crimson");
+    setStatus("Error: " + e2.message, "crimson");
+    btn.disabled = false;
     return;
   }
 
-  const now = Date.now();
-  const inExp = data.token_expira_en ? Date.parse(data.token_expira_en) : 0;
-  const outExp = data.token_salida_expira_en ? Date.parse(data.token_salida_expira_en) : 0;
-
-  sessionId = data.id;
-  closed = false;
-
-  setUIForActive();
-
-  inbox.style.display = "block";
-  if (data.token_actual && inExp > now){
-    const url = `${location.origin}/checkin.html?token=${encodeURIComponent(data.token_actual)}`;
-    inToken.textContent = data.token_actual;
-    renderIn(url);
-    inCountdown = Math.max(0, Math.ceil((inExp - now)/1000));
-    inTimer.textContent = `Próxima rotación en: ${inCountdown} s`;
-  } else {
-    await setNewInToken();
-  }
-  startInTimers();
-
-  if (data.token_salida && outExp > now){
-    const url = `${location.origin}/checkout.html?token=${encodeURIComponent(data.token_salida)}`;
-    outToken.textContent = data.token_salida;
-    renderOut(url);
-    outbox.style.display = "block";
-    outCountdown = Math.max(0, Math.ceil((outExp - now)/1000));
-    outTimer.textContent = `Expira en: ${outCountdown} s`;
-
-    stopOutTimers();
-    outTick = setInterval(() => {
-      outCountdown = Math.max(0, outCountdown - 1);
-      outTimer.textContent = `Expira en: ${outCountdown} s`;
-      if (outCountdown <= 0) clearInterval(outTick);
-    }, 1000);
-  } else {
-    outbox.style.display = "none";
-  }
-
-  btnCheckout.disabled = false;
-  btnClose.disabled = false;
-
-  setMsg("✅ Sesión recuperada. QR de entrada activo.", "green");
-}
-
-btnGen.addEventListener("click", async () => {
-  if (busy) return;
-
-  const saved = readActiveFromLS();
-  if (saved?.sessionId){
-    await recoverIfPossible();
-    return;
-  }
-
-  setMsg("Creando sesión…");
-  setBusy(true);
-
-  const campus = document.getElementById("campus").value;
-  const sala = document.getElementById("sala").value.trim();
-  const tipo = document.getElementById("tipo").value.trim();
-  const bloque = document.getElementById("bloque").value.trim();
-  const tutor = document.getElementById("tutor").value.trim().toLowerCase();
-
-  if (!tutor.endsWith("@usm.cl")) {
-    setMsg("Ingresa un correo tutor @usm.cl", "crimson");
-    setBusy(false);
-    return;
-  }
-  if (!sala || !tipo || !bloque){
-    setMsg("Completa Sala, Tipo de sesión y Bloque.", "crimson");
-    setBusy(false);
-    return;
-  }
-
-  closed = false;
-  sessionId = null;
-  resetUIForNew();
-
-  const codigo6 = String(Math.floor(100000 + Math.random() * 900000));
-  const expira10 = new Date(Date.now() + 10*60*1000).toISOString();
-
-  const { data, error } = await db
-    .from("sesiones")
-    .insert([{
-      campus, sala, tipo, bloque,
-      tutor_correo: tutor,
-      codigo6,
-      expira_en: expira10
-    }])
-    .select("id")
-    .single();
-
-  if (error) {
-    setMsg("Error crear sesión: " + error.message, "crimson");
-    setBusy(false);
-    return;
-  }
-
-  sessionId = data.id;
-  setUIForActive();
-
-  saveActiveToLS({
-    sessionId,
-    campus, sala, tipo, bloque,
-    tutor_correo: tutor,
-    created_at: new Date().toISOString()
-  });
-
-  setMsg("✅ Sesión creada. QR de entrada activo.", "green");
-
-  await setNewInToken();
-  startInTimers();
-
-  setBusy(false);
-});
-
-btnCheckout.addEventListener("click", async () => {
-  await activateCheckoutQR();
-});
-
-btnClose.addEventListener("click", async () => {
-  const ok = confirm("¿Finalizar sesión? Esto invalidará QR de entrada/salida y bloqueará nuevos marcajes.");
-  if (ok) await closeSession();
-});
-
-window.addEventListener("load", async () => {
-  await recoverIfPossible();
+  setStatus("✅ Asistencia registrada.", "green");
+  correoEl.value = "";
+  // tokenEl.value = ""; // opcional: si quieres limpiar token después
+  btn.disabled = false;
 });
 </script>
-
 </body>
 </html>
