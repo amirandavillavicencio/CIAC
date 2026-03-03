@@ -100,7 +100,7 @@ btn.addEventListener("click", async () => {
     return;
   }
 
-  // ✅ Buscar sesión usando RPC (evita RLS / 0 filas por SELECT bloqueado)
+  // ✅ RPC devuelve id + token_expira_en + expira_en (sesión)
   const { data: rows, error: e1 } = await db
     .rpc("get_sesion_por_token", { p_token: token });
 
@@ -118,6 +118,14 @@ btn.addEventListener("click", async () => {
     return;
   }
 
+  // ✅ Rechazar si sesión expiró (auto-cierre 3h)
+  if (!sesion.expira_en || (new Date() > new Date(sesion.expira_en))) {
+    setStatus("Sesión expirada. Pide al tutor iniciar una nueva sesión.", "crimson");
+    btn.disabled = false;
+    return;
+  }
+
+  // Token puntual
   if (!sesion.token_expira_en || (new Date() > new Date(sesion.token_expira_en))) {
     setStatus("Token expirado. Escanea el QR actualizado en sala.", "crimson");
     btn.disabled = false;
