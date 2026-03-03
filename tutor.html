@@ -1,113 +1,136 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CIAC Check-In · Tutor</title>
-
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
-<style>
-:root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; }
-body{ margin:0; font-family:Arial; background:var(--bg);}
-.topbar{ background:var(--blue); color:#fff; padding:16px; font-weight:700;}
-.wrap{ max-width:420px; margin:20px auto; padding:0 14px;}
-.card{ background:#fff; padding:20px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,.08);}
-label{ font-size:12px; display:block; margin-top:10px;}
-input,select{ width:100%; padding:10px; margin-top:4px; border-radius:8px; border:1px solid #ccc;}
-button{ width:100%; margin-top:14px; padding:11px; border-radius:8px; border:0; background:#f3c623; font-weight:700; cursor:pointer;}
-.qrbox{ margin-top:15px; display:none; text-align:center;}
-.code{ font-size:28px; font-weight:800; margin-top:8px;}
-.msg{ margin-top:10px; font-size:13px;}
-img{ margin-top:10px; border:1px solid #e5e7eb; padding:10px; border-radius:10px;}
-</style>
+  <meta charset="UTF-8">
+  <title>CIAC - Portal Tutor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 500px;
+      margin: 40px auto;
+      text-align: center;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+    }
+    .active {
+      color: green;
+      font-weight: bold;
+    }
+    .timer {
+      font-size: 1.5em;
+      margin: 15px 0;
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="topbar">CIAC Check-In · Tutor</div>
+<h2>Portal Tutor CIAC</h2>
 
-<div class="wrap">
-<div class="card">
-
-<label>Campus</label>
-<select id="campus">
-<option>Casa Central</option>
-<option>San Joaquín</option>
-<option selected>Vitacura</option>
-</select>
-
-<label>Sala</label>
-<input id="sala" value="ciac">
-
-<label>Tipo de sesión</label>
-<input id="tipo" value="matematicas">
-
-<label>Bloque</label>
-<input id="bloque" value="10:00-11:00">
-
-<label>Correo tutor</label>
-<input id="tutor" type="email" value="andres.mirandav@usm.cl">
-
-<button id="btnGen">Generar Código QR</button>
-
-<div class="msg" id="msg"></div>
-
-<div class="qrbox" id="qrbox">
-<img id="qrImg" width="180">
-<div class="code" id="code"></div>
+<div id="formSection">
+  <input type="text" id="tutorName" placeholder="Nombre Tutor" required>
+  <input type="text" id="subject" placeholder="Asignatura" required>
+  <select id="modalidad">
+    <option value="presencial">Presencial</option>
+    <option value="online">Online</option>
+  </select>
+  <button onclick="startSession()">Iniciar Sesión</button>
 </div>
 
-</div>
+<div id="activeSection" style="display:none;">
+  <p class="active">🟢 Sesión Activa</p>
+  <p>ID: <span id="sessionId"></span></p>
+  <div class="timer" id="timer">00:00:00</div>
+  <button onclick="endSession()">Finalizar Sesión</button>
 </div>
 
 <script>
-const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
+let currentSession = null;
+let timerInterval = null;
 
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-function genCode6() {
-return String(Math.floor(100000 + Math.random() * 900000));
+function generateSessionId() {
+  const now = new Date();
+  return "CIAC-" + now.getFullYear() +
+    String(now.getMonth()+1).padStart(2,"0") +
+    String(now.getDate()).padStart(2,"0") +
+    "-" + Math.floor(Math.random()*1000);
 }
 
-document.getElementById("btnGen").addEventListener("click", async () => {
+function startSession() {
+  if (localStorage.getItem("activeSession")) {
+    alert("Ya tienes una sesión activa. Finalízala antes de crear una nueva.");
+    return;
+  }
 
-const campus = document.getElementById("campus").value;
-const sala = document.getElementById("sala").value;
-const tipo = document.getElementById("tipo").value;
-const bloque = document.getElementById("bloque").value;
-const tutor = document.getElementById("tutor").value.toLowerCase();
+  const tutor = document.getElementById("tutorName").value;
+  const subject = document.getElementById("subject").value;
+  const modalidad = document.getElementById("modalidad").value;
 
-const codigo6 = genCode6();
-const expira = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  if (!tutor || !subject) {
+    alert("Completa todos los campos.");
+    return;
+  }
 
-const { error } = await db.from("sesiones").insert([{
-campus,
-sala,
-tipo,
-bloque,
-tutor_correo: tutor,
-codigo6,
-expira_en: expira
-}]);
+  const session = {
+    id: generateSessionId(),
+    tutor,
+    subject,
+    modalidad,
+    start_at: new Date().toISOString(),
+    end_at: null,
+    status: "active"
+  };
 
-if (error) {
-document.getElementById("msg").innerText = "Error BD: " + error.message;
-return;
+  localStorage.setItem("activeSession", JSON.stringify(session));
+  currentSession = session;
+
+  showActiveSession();
 }
 
-const checkinUrl = location.origin + "/checkin.html?code=" + codigo6;
+function showActiveSession() {
+  document.getElementById("formSection").style.display = "none";
+  document.getElementById("activeSection").style.display = "block";
+  document.getElementById("sessionId").innerText = currentSession.id;
 
-/* GENERAR QR SIN LIBRERÍA */
-const qrApi = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(checkinUrl);
+  const startTime = new Date(currentSession.start_at);
 
-document.getElementById("qrImg").src = qrApi;
-document.getElementById("code").innerText = codigo6;
-document.getElementById("qrbox").style.display = "block";
-document.getElementById("msg").innerText = "Código generado correctamente.";
+  timerInterval = setInterval(() => {
+    const now = new Date();
+    const diff = now - startTime;
 
-});
+    const hours = String(Math.floor(diff / 3600000)).padStart(2,"0");
+    const minutes = String(Math.floor((diff % 3600000)/60000)).padStart(2,"0");
+    const seconds = String(Math.floor((diff % 60000)/1000)).padStart(2,"0");
+
+    document.getElementById("timer").innerText = `${hours}:${minutes}:${seconds}`;
+  }, 1000);
+}
+
+function endSession() {
+  if (!confirm("¿Confirma que desea finalizar esta tutoría?")) return;
+
+  currentSession.end_at = new Date().toISOString();
+  currentSession.status = "closed";
+
+  console.log("Sesión cerrada:", currentSession);
+
+  localStorage.removeItem("activeSession");
+  clearInterval(timerInterval);
+
+  alert("Sesión finalizada correctamente.");
+  location.reload();
+}
+
+// Si ya había sesión activa al recargar
+window.onload = () => {
+  const saved = localStorage.getItem("activeSession");
+  if (saved) {
+    currentSession = JSON.parse(saved);
+    showActiveSession();
+  }
+}
 </script>
 
 </body>
