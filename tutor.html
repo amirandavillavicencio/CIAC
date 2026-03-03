@@ -47,6 +47,18 @@ input,select{ width:100%; padding:10px; margin-top:4px; border-radius:10px; bord
 
 img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:#fff; }
 .note{ margin-top:10px; font-size:12px; color:var(--muted); line-height:1.35; }
+
+.summary{
+  margin-top:12px;
+  display:none;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  background:#fff;
+}
+.summary .title{ font-weight:900; font-size:13px; margin:0 0 8px; }
+.summary .line{ font-size:12px; color:#111827; margin:4px 0; }
+.summary .muted{ color:var(--muted); }
 </style>
 </head>
 
@@ -60,7 +72,7 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
     <div class="card">
       <h1>Control de sesión</h1>
       <p class="sub">
-        Entrada con QR dinámico (cambia cada 3 min) + salida con QR de 90s. Al terminar, usa <b>Finalizar mentoría</b> para registrar hora de cierre.
+        Entrada con QR dinámico (cambia cada 3 min) + salida con QR de 90s. Al terminar, usa <b>Finalizar mentoría</b> para registrar hora de cierre (sin generar QR).
       </p>
 
       <label>Campus</label>
@@ -76,7 +88,7 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
       <label>Tipo de sesión</label>
       <input id="tipo" placeholder="Ej: Matemáticas" value="matematicas" />
 
-      <!-- ✅ Horario simple: solo hora inicio -->
+      <!-- Horario simple: solo hora inicio -->
       <label>Hora inicio</label>
       <select id="horaInicio"></select>
 
@@ -120,9 +132,16 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
           </div>
         </div>
         <div class="timer" id="outTimer">Expira en: -- s</div>
-        <div class="note">
-          (La salida sigue en 90s.)
-        </div>
+        <div class="note">(La salida sigue en 90s.)</div>
+      </div>
+
+      <!-- Resumen para reporte -->
+      <div class="summary" id="summary">
+        <div class="title">✅ Mentoría finalizada</div>
+        <div class="line"><span class="muted">Inicio:</span> <span id="sumInicio">--</span></div>
+        <div class="line"><span class="muted">Término:</span> <span id="sumTermino">--</span></div>
+        <div class="line"><span class="muted">Duración:</span> <span id="sumDuracion">--</span></div>
+        <div class="line muted">Esta información se usa para el reporte.</div>
       </div>
 
     </div>
@@ -154,14 +173,24 @@ const outToken = document.getElementById("outToken");
 const outLink = document.getElementById("outLink");
 const outTimer = document.getElementById("outTimer");
 
+// Resumen
+const summaryBox = document.getElementById("summary");
+const sumInicio = document.getElementById("sumInicio");
+const sumTermino = document.getElementById("sumTermino");
+const sumDuracion = document.getElementById("sumDuracion");
+
 // Horario simple
 const horaInicioEl = document.getElementById("horaInicio");
 
 // State
 const LS_KEY = "ciac_tutor_active_session";
+const LS_LAST_CLOSED = "ciac_tutor_last_closed";
 let sessionId = null;
 let closed = false;
 let busy = false;
+
+// Para resumen/reporte
+let sessionCreatedAtIso = null;
 
 // Timers
 let inTick = null;
@@ -175,7 +204,6 @@ function setBusy(v){
   busy = v;
   btnGen.disabled = v || false;
 }
-
 function setMsg(text, color="#111827"){
   msg.style.color = color;
   msg.textContent = text;
@@ -185,16 +213,13 @@ function rand10(){
   const r = (crypto?.randomUUID ? crypto.randomUUID().replace(/-/g,'') : (Date.now()+''+Math.random()).replace('.',''));
   return r.slice(0, 10);
 }
-
 function qrUrl(url, size=190){
   return "https://api.qrserver.com/v1/create-qr-code/?size="+size+"x"+size+"&data=" + encodeURIComponent(url);
 }
-
 function renderIn(url){
   qrIn.src = qrUrl(url, 190);
   inLink.textContent = url;
 }
-
 function renderOut(url){
   qrOut.src = qrUrl(url, 190);
   outLink.textContent = url;
@@ -206,7 +231,6 @@ function stopInTimers(){
   inTick = null;
   inRotate = null;
 }
-
 function stopOutTimers(){
   if (outTick) clearInterval(outTick);
   outTick = null;
@@ -228,10 +252,15 @@ function readActiveFromLS(){
   }
 }
 
+function saveLastClosedToLS(payload){
+  localStorage.setItem(LS_LAST_CLOSED, JSON.stringify(payload));
+}
+
 function setUIForActive(){
   inbox.style.display = "block";
   btnCheckout.disabled = false;
   btnEnd.disabled = false;
+  summaryBox.style.display = "none";
 }
 
 function resetUIForNew(){
@@ -239,6 +268,7 @@ function resetUIForNew(){
   stopOutTimers();
   outbox.style.display = "none";
   inbox.style.display = "none";
+  summaryBox.style.display = "none";
   btnCheckout.disabled = true;
   btnEnd.disabled = true;
   inToken.textContent = "------";
@@ -327,11 +357,40 @@ async function activateCheckoutQR(){
   }
 }
 
+function fmtLocal(iso){
+  if (!iso) return "--";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleString("es-CL", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", second:"2-digit" });
+}
+
+function durationText(startIso, endIso){
+  const a = Date.parse(startIso || "");
+  const b = Date.parse(endIso || "");
+  if (!a || !b || isNaN(a) || isNaN(b) || b < a) return "--";
+  let s = Math.floor((b - a) / 1000);
+  const h = Math.floor(s / 3600); s -= h*3600;
+  const m = Math.floor(s / 60); s -= m*60;
+  const parts = [];
+  if (h) parts.push(`${h}h`);
+  if (m || h) parts.push(`${m}m`);
+  parts.push(`${s}s`);
+  return parts.join(" ");
+}
+
+function showSummary(startIso, endIso){
+  sumInicio.textContent = fmtLocal(startIso);
+  sumTermino.textContent = fmtLocal(endIso);
+  sumDuracion.textContent = durationText(startIso, endIso);
+  summaryBox.style.display = "block";
+}
+
 async function endMentoria(){
   if (!sessionId || busy) return;
 
   setBusy(true);
   try{
+    // Cierre directo: NO genera QR, solo guarda termino_en e invalida tokens
     closed = true;
     stopInTimers();
     stopOutTimers();
@@ -349,6 +408,7 @@ async function endMentoria(){
       })
       .eq("id", sessionId);
 
+    // Fallback si termino_en no existe
     if (error && (error.message || "").toLowerCase().includes("termino_en")) {
       const r2 = await db
         .from("sesiones")
@@ -368,17 +428,37 @@ async function endMentoria(){
       return;
     }
 
-    clearActiveFromLS();
-
-    setMsg("✅ Mentoría finalizada. Se registró hora de término y QR inválidos.", "green");
+    // UI: apaga todo (sin QR de salida al final)
+    outbox.style.display = "none";
+    outToken.textContent = "------";
+    outLink.textContent = "";
+    outTimer.textContent = "Expira en: -- s";
 
     inToken.textContent = "CERRADA";
     inTimer.textContent = "Sesión cerrada.";
-    outToken.textContent = "CERRADA";
-    outTimer.textContent = "Sesión cerrada.";
 
     btnEnd.disabled = true;
     btnCheckout.disabled = true;
+
+    // Estado para reporte
+    const saved = readActiveFromLS();
+    const startIso = sessionCreatedAtIso || saved?.created_at || null;
+
+    saveLastClosedToLS({
+      sesion_id: sessionId,
+      campus: saved?.campus,
+      sala: saved?.sala,
+      tipo: saved?.tipo,
+      bloque: saved?.bloque,
+      tutor_correo: saved?.tutor_correo,
+      inicio_real: startIso,
+      termino_en: nowIso
+    });
+
+    clearActiveFromLS();
+
+    setMsg("✅ Mentoría finalizada. Se registró hora de término (sin generar QR).", "green");
+    showSummary(startIso, nowIso);
   } finally {
     setBusy(false);
   }
@@ -393,7 +473,7 @@ async function recoverIfPossible(){
 
   const { data, error } = await db
     .from("sesiones")
-    .select("id, token_actual, token_expira_en, token_salida, token_salida_expira_en")
+    .select("id, created_at, termino_en, token_actual, token_expira_en, token_salida, token_salida_expira_en")
     .eq("id", saved.sessionId)
     .single();
 
@@ -403,11 +483,31 @@ async function recoverIfPossible(){
     return;
   }
 
+  // Si ya fue finalizada, mostrar resumen y limpiar estado activo
+  if (data.termino_en){
+    sessionCreatedAtIso = data.created_at || saved.created_at || null;
+    clearActiveFromLS();
+    sessionId = data.id;
+    closed = true;
+
+    setMsg("ℹ️ Esta sesión ya estaba finalizada.", "#111827");
+    inbox.style.display = "block";
+    inToken.textContent = "CERRADA";
+    inTimer.textContent = "Sesión cerrada.";
+    outbox.style.display = "none";
+    btnCheckout.disabled = true;
+    btnEnd.disabled = true;
+
+    showSummary(sessionCreatedAtIso, data.termino_en);
+    return;
+  }
+
   const now = Date.now();
   const inExp = data.token_expira_en ? Date.parse(data.token_expira_en) : 0;
   const outExp = data.token_salida_expira_en ? Date.parse(data.token_salida_expira_en) : 0;
 
   sessionId = data.id;
+  sessionCreatedAtIso = data.created_at || saved.created_at || null;
   closed = false;
 
   setUIForActive();
@@ -450,7 +550,6 @@ async function recoverIfPossible(){
 
 /* ===== Horario simple: solo hora inicio ===== */
 function pad2(n){ return String(n).padStart(2,'0'); }
-
 function buildTimes(startHH=8, endHH=22, stepMin=15){
   const out = [];
   for (let h = startHH; h <= endHH; h++){
@@ -462,7 +561,6 @@ function buildTimes(startHH=8, endHH=22, stepMin=15){
   return out;
 }
 const TIMES = buildTimes(8, 22, 15);
-
 function fillSelect(selectEl, values){
   selectEl.innerHTML = "";
   for (const v of values){
@@ -472,12 +570,10 @@ function fillSelect(selectEl, values){
     selectEl.appendChild(o);
   }
 }
-
 function initHorario(){
   fillSelect(horaInicioEl, TIMES);
   horaInicioEl.value = "10:00";
 }
-
 function getBloqueValue(){
   return horaInicioEl.value; // bloque = hora inicio
 }
@@ -514,10 +610,11 @@ btnGen.addEventListener("click", async () => {
 
   closed = false;
   sessionId = null;
+  sessionCreatedAtIso = null;
   resetUIForNew();
 
   const codigo6 = String(Math.floor(100000 + Math.random() * 900000));
-  const expira10 = new Date(Date.now() + 10*60*1000).toISOString();
+  const expira10 = new Date(Date.now() + 10*60*1000).toISOString(); // (lo dejamos igual por compatibilidad)
 
   const { data, error } = await db
     .from("sesiones")
@@ -527,7 +624,7 @@ btnGen.addEventListener("click", async () => {
       codigo6,
       expira_en: expira10
     }])
-    .select("id")
+    .select("id, created_at")
     .single();
 
   if (error) {
@@ -537,13 +634,14 @@ btnGen.addEventListener("click", async () => {
   }
 
   sessionId = data.id;
+  sessionCreatedAtIso = data.created_at || new Date().toISOString();
   setUIForActive();
 
   saveActiveToLS({
     sessionId,
     campus, sala, tipo, bloque,
     tutor_correo: tutor,
-    created_at: new Date().toISOString()
+    created_at: sessionCreatedAtIso
   });
 
   setMsg("✅ Sesión creada. QR de entrada activo.", "green");
@@ -559,7 +657,7 @@ btnCheckout.addEventListener("click", async () => {
 });
 
 btnEnd.addEventListener("click", async () => {
-  const ok = confirm("¿Finalizar mentoría? Esto registrará la hora de término e invalidará QR de entrada/salida.");
+  const ok = confirm("¿Finalizar mentoría? Esto registrará la hora de término e invalidará QR de entrada/salida (sin generar QR).");
   if (ok) await endMentoria();
 });
 
