@@ -8,144 +8,1056 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
 <style>
-:root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; --muted:#6b7280; --line:#e5e7eb; }
+:root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; --muted:#6b7280; --line:#e5e7eb; --cta:#f3c623; --danger:#b91c1c; }
 body{ margin:0; font-family:Arial, sans-serif; background:var(--bg); color:#111827; }
-.topbar{ background:var(--blue); color:#fff; padding:16px 22px; display:flex; align-items:center; justify-content:space-between; }
-.brand{ font-weight:800; }
-.wrap{ max-width:980px; margin:22px auto; padding:0 14px; }
+.topbar{ background:var(--blue); color:#fff; padding:16px 22px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.brand{ font-weight:900; letter-spacing:.2px; }
+a{ color:#fff; text-decoration:none; font-weight:900; }
+
+.wrap{ max-width:1100px; margin:22px auto; padding:0 14px; }
 .card{ background:#fff; border-radius:14px; box-shadow:0 8px 20px rgba(0,0,0,.08); border:1px solid var(--line); padding:16px; }
-h1{ margin:0 0 10px; font-size:20px; }
-.muted{ color:var(--muted); font-size:12px; }
-.bar{ display:flex; gap:10px; flex-wrap:wrap; margin:12px 0; }
-input{ padding:10px; border:1px solid #d1d5db; border-radius:10px; }
-.btn{ padding:10px 12px; border:0; border-radius:10px; cursor:pointer; font-weight:800; background:var(--blue); color:#fff; }
-table{ width:100%; border-collapse:collapse; margin-top:8px; }
-th,td{ padding:10px; border-bottom:1px solid var(--line); text-align:left; font-size:13px; }
-th{ font-size:12px; text-transform:uppercase; letter-spacing:.4px; }
+h1{ margin:0 0 6px; font-size:20px; }
+.muted{ color:var(--muted); font-size:12px; line-height:1.35; }
+
+.bar{ display:flex; gap:10px; flex-wrap:wrap; margin:12px 0; align-items:end; }
+.field{ display:flex; flex-direction:column; gap:4px; }
+label{ font-size:11px; color:var(--muted); font-weight:900; text-transform:uppercase; letter-spacing:.3px; }
+input,select{ padding:10px; border:1px solid #d1d5db; border-radius:10px; background:#fff; min-width:170px; }
+input[type="date"]{ min-width:150px; }
+.btn{ padding:10px 12px; border:0; border-radius:10px; cursor:pointer; font-weight:900; background:var(--blue); color:#fff; }
+.btnAlt{ background:#111827; }
+.btnWarn{ background:var(--cta); color:#111827; }
+.btnDanger{ background:var(--danger); }
+.btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+.grid{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap:12px;
+  margin-top:10px;
+}
+@media(min-width: 960px){
+  .grid{ grid-template-columns: 1fr 1fr; }
+}
+.kpis{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap:10px;
+}
+@media(min-width: 860px){
+  .kpis{ grid-template-columns: repeat(4, minmax(0,1fr)); }
+}
+.kpi{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  background:#fff;
+}
+.kpi .t{ font-size:11px; color:var(--muted); font-weight:900; text-transform:uppercase; letter-spacing:.3px; }
+.kpi .v{ font-size:20px; font-weight:900; margin-top:6px; }
+.kpi .s{ font-size:12px; color:var(--muted); margin-top:4px; }
+
+.chartBox{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  background:#fff;
+}
+.chartTitle{ font-weight:900; font-size:13px; margin:0 0 8px; }
+canvas{ width:100%; height:240px; display:block; border-radius:10px; border:1px solid var(--line); background:#fff; }
+
+.tableWrap{
+  margin-top:12px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  overflow:hidden;
+  background:#fff;
+}
+table{ width:100%; border-collapse:collapse; }
+th,td{ padding:10px; border-bottom:1px solid var(--line); text-align:left; font-size:13px; vertical-align:top; }
+th{ font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:#0f172a; background:#f8fafc; }
+tr:hover td{ background:#fcfcfd; }
+
+.badge{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:900;
+  border:1px solid var(--line);
+  background:#fff;
+}
+.badgeOk{ background:#ecfdf5; border-color:#a7f3d0; color:#065f46; }
+.badgeOpen{ background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8; }
+.badgeWarn{ background:#fffbeb; border-color:#fcd34d; color:#92400e; }
+
+.actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.smallBtn{
+  padding:8px 10px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:#fff;
+  cursor:pointer;
+  font-weight:900;
+  font-size:12px;
+}
+.smallBtn:hover{ background:#f8fafc; }
+
+.detail{
+  display:none;
+  padding:12px;
+  background:#f8fafc;
+}
+.detailGrid{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap:10px;
+}
+@media(min-width: 900px){
+  .detailGrid{ grid-template-columns: 1fr 1fr; }
+}
+.detailCard{
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#fff;
+  padding:12px;
+}
+.detailTitle{ font-weight:900; font-size:13px; margin:0 0 8px; }
+.detailList{ font-size:12px; color:#111827; line-height:1.45; }
+.detailList .muted{ color:var(--muted); }
+
 .footer{ text-align:center; color:var(--muted); font-size:12px; margin:14px 0 30px; }
 
 /* Lock */
-.lock{ position:fixed; inset:0; background:rgba(17,24,39,.55); display:flex; align-items:center; justify-content:center; }
-.lockCard{ width:420px; background:#fff; border-radius:14px; padding:20px; box-shadow:0 12px 30px rgba(0,0,0,.25); }
+.lock{ position:fixed; inset:0; background:rgba(17,24,39,.55); display:flex; align-items:center; justify-content:center; z-index:9999; }
+.lockCard{ width:420px; background:#fff; border-radius:14px; padding:20px; box-shadow:0 12px 30px rgba(0,0,0,.25); border:1px solid var(--line); }
 .lockTitle{ font-weight:900; font-size:16px; margin-bottom:6px; }
-.lockHint{ font-size:12px; color:var(--muted); margin-bottom:12px; }
+.lockHint{ font-size:12px; color:var(--muted); margin-bottom:12px; line-height:1.35; }
 .lockRow{ display:flex; gap:10px; }
 .lockMsg{ margin-top:10px; font-size:12px; min-height:16px; }
 </style>
 </head>
 
 <body>
+  <div class="topbar">
+    <div class="brand">CIAC Check-In · Reporte</div>
+    <a href="index.html">🏠 Inicio</a>
+  </div>
 
-<div class="topbar">
-<div class="brand">CIAC Check-In · Reporte</div>
-<a href="index.html" style="color:#fff; text-decoration:none; font-weight:800;">🏠 Inicio</a>
-</div>
+  <div class="wrap">
+    <div class="card" id="app" style="display:none;">
+      <h1>Reporte de Mentorías</h1>
+      <div class="muted" id="subhead">
+        Período: <b id="uiPeriodo">—</b> · Ayudante: <b id="uiTutor">—</b> · Generado: <b id="uiGenerado">—</b>
+      </div>
 
-<div class="wrap">
-<div class="card" id="app" style="display:none;">
-<h1>Reporte de Asistencia</h1>
-<div class="muted" id="status">Cargando…</div>
+      <!-- Filtros -->
+      <div class="bar">
+        <div class="field">
+          <label>Desde</label>
+          <input id="fDesde" type="date" />
+        </div>
+        <div class="field">
+          <label>Hasta</label>
+          <input id="fHasta" type="date" />
+        </div>
+        <div class="field">
+          <label>Ayudante</label>
+          <select id="fTutor">
+            <option value="__ALL__">Todos</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Área</label>
+          <select id="fArea">
+            <option value="__ALL__">Todas</option>
+            <option>Matemática</option>
+            <option>Física</option>
+            <option>Química</option>
+            <option>Programación</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1; min-width:240px;">
+          <label>Buscar (campus/sala/tutor/área/código)</label>
+          <input id="fBuscar" placeholder="Ej: vitacura, CIAC-1, matemática, 123456" style="width:100%; min-width:240px;" />
+        </div>
 
-<div class="bar">
-<input id="qTutor" placeholder="Filtrar tutor">
-<input id="qCode" placeholder="Filtrar código">
-<button class="btn" id="btnFiltrar">Filtrar</button>
-</div>
+        <button class="btn" id="btnAplicar">Aplicar</button>
+        <button class="btn btnAlt" id="btnReset">Mes actual</button>
 
-<table>
-<thead>
-<tr>
-<th>Fecha</th>
-<th>Código</th>
-<th>Tutor</th>
-<th>Campus</th>
-<th>Sala</th>
-<th>Tipo</th>
-<th>Alumno</th>
-</tr>
-</thead>
-<tbody id="rows"></tbody>
-</table>
-</div>
+        <button class="btn btnWarn" id="btnCSV" title="Exporta sesiones del período">Exportar CSV (sesiones)</button>
+        <button class="btn" id="btnCSVAsist" title="Exporta asistencias del período">Exportar CSV (asistencias)</button>
+      </div>
 
-<div class="footer">© Universidad Técnica Federico Santa María · CIAC</div>
-</div>
+      <div class="muted" id="status">Listo.</div>
 
-<!-- LOCK SCREEN -->
-<div class="lock" id="lock">
-<div class="lockCard">
-<div class="lockTitle">Acceso restringido</div>
-<p class="lockHint">Ingresa la clave para visualizar el reporte.</p>
-<div class="lockRow">
-<input id="pass" type="password" placeholder="Clave del reporte" />
-<button class="btn" id="btnEnter">Entrar</button>
-</div>
-<div class="lockMsg" id="lockMsg"></div>
-</div>
-</div>
+      <!-- Métricas -->
+      <div class="kpis" style="margin-top:12px;">
+        <div class="kpi">
+          <div class="t">Sesiones</div>
+          <div class="v" id="kSesiones">0</div>
+          <div class="s" id="kSesionesS">—</div>
+        </div>
+        <div class="kpi">
+          <div class="t">Horas reales</div>
+          <div class="v" id="kHoras">0.0</div>
+          <div class="s">Solo sesiones cerradas</div>
+        </div>
+        <div class="kpi">
+          <div class="t">Duración promedio</div>
+          <div class="v" id="kAvg">0</div>
+          <div class="s">Minutos (cerradas)</div>
+        </div>
+        <div class="kpi">
+          <div class="t">Ayudantes activos</div>
+          <div class="v" id="kTut">0</div>
+          <div class="s">En el período</div>
+        </div>
+        <div class="kpi">
+          <div class="t">Alumnos atendidos</div>
+          <div class="v" id="kAlum">0</div>
+          <div class="s">Total de asistencias</div>
+        </div>
+        <div class="kpi">
+          <div class="t">Sesiones cerradas</div>
+          <div class="v" id="kCerr">0</div>
+          <div class="s">Con término registrado</div>
+        </div>
+        <div class="kpi">
+          <div class="t">Sesiones abiertas</div>
+          <div class="v" id="kAb">0</div>
+          <div class="s">Sin término</div>
+        </div>
+        <div class="kpi">
+          <div class="t">Horas por ayudante</div>
+          <div class="v" id="kHpt">0.0</div>
+          <div class="s">Promedio (cerradas)</div>
+        </div>
+      </div>
+
+      <!-- Gráficos -->
+      <div class="grid">
+        <div class="chartBox">
+          <div class="chartTitle">Horas reales por día (sesiones cerradas)</div>
+          <canvas id="cDia" width="900" height="280"></canvas>
+          <div class="muted" id="cDiaHint" style="margin-top:6px;">—</div>
+        </div>
+        <div class="chartBox">
+          <div class="chartTitle">Horas reales por ayudante (top 8)</div>
+          <canvas id="cTutor" width="900" height="280"></canvas>
+          <div class="muted" id="cTutorHint" style="margin-top:6px;">—</div>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="tableWrap" style="margin-top:12px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Código</th>
+              <th>Ayudante</th>
+              <th>Área</th>
+              <th>Campus</th>
+              <th>Sala</th>
+              <th>Hora inicio</th>
+              <th>Inicio real</th>
+              <th>Término</th>
+              <th>Duración</th>
+              <th>Alumnos</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+
+      <div class="footer">© Universidad Técnica Federico Santa María · CIAC</div>
+    </div>
+  </div>
+
+  <!-- LOCK SCREEN -->
+  <div class="lock" id="lock">
+    <div class="lockCard">
+      <div class="lockTitle">Acceso restringido</div>
+      <p class="lockHint">
+        Ingresa la clave para visualizar el reporte. (Esto es una barrera básica visual; no reemplaza Supabase Auth.)
+      </p>
+      <div class="lockRow">
+        <input id="pass" type="password" placeholder="Clave del reporte" style="flex:1;" />
+        <button class="btn" id="btnEnter">Entrar</button>
+      </div>
+      <div class="lockMsg" id="lockMsg"></div>
+    </div>
+  </div>
 
 <script>
+/* =========================
+   CONFIG
+========================= */
 const REPORT_PASSWORD = "CIAC#R3p0rt3_2026!VtC-9qLx";
 
 const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
-
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+/* =========================
+   UI refs
+========================= */
 const lock = document.getElementById("lock");
 const app = document.getElementById("app");
 const lockMsg = document.getElementById("lockMsg");
 const passEl = document.getElementById("pass");
 
+const uiPeriodo = document.getElementById("uiPeriodo");
+const uiTutor = document.getElementById("uiTutor");
+const uiGenerado = document.getElementById("uiGenerado");
+const statusEl = document.getElementById("status");
+
+const fDesde = document.getElementById("fDesde");
+const fHasta = document.getElementById("fHasta");
+const fTutor = document.getElementById("fTutor");
+const fArea = document.getElementById("fArea");
+const fBuscar = document.getElementById("fBuscar");
+
+const btnAplicar = document.getElementById("btnAplicar");
+const btnReset = document.getElementById("btnReset");
+const btnCSV = document.getElementById("btnCSV");
+const btnCSVAsist = document.getElementById("btnCSVAsist");
+
+const rowsEl = document.getElementById("rows");
+
+/* KPIs */
+const kSesiones = document.getElementById("kSesiones");
+const kSesionesS = document.getElementById("kSesionesS");
+const kHoras = document.getElementById("kHoras");
+const kAvg = document.getElementById("kAvg");
+const kTut = document.getElementById("kTut");
+const kAlum = document.getElementById("kAlum");
+const kCerr = document.getElementById("kCerr");
+const kAb = document.getElementById("kAb");
+const kHpt = document.getElementById("kHpt");
+
+/* Charts */
+const cDia = document.getElementById("cDia");
+const cTutor = document.getElementById("cTutor");
+const cDiaHint = document.getElementById("cDiaHint");
+const cTutorHint = document.getElementById("cTutorHint");
+
+/* =========================
+   Helpers
+========================= */
 function unlock(){
-lock.style.display="none";
-app.style.display="block";
-cargar();
+  lock.style.display="none";
+  app.style.display="block";
+  boot();
 }
 
 if(localStorage.getItem("ciac_report_ok")==="1") unlock();
 
 document.getElementById("btnEnter").onclick = ()=>{
-if(passEl.value === REPORT_PASSWORD){
-localStorage.setItem("ciac_report_ok","1");
-unlock();
-}else{
-lockMsg.style.color="crimson";
-lockMsg.innerText="Clave incorrecta.";
-}
+  if(passEl.value === REPORT_PASSWORD){
+    localStorage.setItem("ciac_report_ok","1");
+    unlock();
+  }else{
+    lockMsg.style.color="crimson";
+    lockMsg.innerText="Clave incorrecta.";
+  }
 };
 
-async function cargar(){
-document.getElementById("status").innerText="Cargando…";
-rows.innerHTML="";
-
-const { data, error } = await db
-.from("asistencias_v2")
-.select("correo_alumno, created_at, sesiones:sesion_id (codigo6, tutor_correo, campus, sala, tipo)")
-.order("created_at",{ascending:false});
-
-if(error){
-document.getElementById("status").innerText="Error: "+error.message;
-return;
+function setStatus(t, color="#111827"){
+  statusEl.style.color = color;
+  statusEl.textContent = t;
 }
 
-for(let r of data){
-rows.innerHTML+=`
-<tr>
-<td>${new Date(r.created_at).toLocaleString()}</td>
-<td>${r.sesiones?.codigo6||""}</td>
-<td>${r.sesiones?.tutor_correo||""}</td>
-<td>${r.sesiones?.campus||""}</td>
-<td>${r.sesiones?.sala||""}</td>
-<td>${r.sesiones?.tipo||""}</td>
-<td>${r.correo_alumno}</td>
-</tr>`;
+function fmtDateOnly(iso){
+  if(!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleDateString("es-CL");
+}
+function fmtDT(iso){
+  if(!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleString("es-CL");
+}
+function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+function minutesBetween(aIso, bIso){
+  const a = Date.parse(aIso || "");
+  const b = Date.parse(bIso || "");
+  if(isNaN(a) || isNaN(b) || b < a) return null;
+  return Math.round((b - a) / 60000);
+}
+function hoursBetween(aIso, bIso){
+  const m = minutesBetween(aIso, bIso);
+  if(m === null) return null;
+  return m / 60;
+}
+function downloadTextFile(filename, content, mime="text/plain;charset=utf-8"){
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1500);
+}
+function csvEscape(v){
+  const s = (v === null || v === undefined) ? "" : String(v);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
+  return s;
+}
+function ymd(d){
+  // YYYY-MM-DD
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+function startOfMonth(d){
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+function endOfToday(d){
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23,59,59,999);
+}
+function dayKeyLocal(iso){
+  // yyyy-mm-dd in local time
+  const d = new Date(iso);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
-document.getElementById("status").innerText="Registros cargados.";
+/* =========================
+   State
+========================= */
+let sessions = [];        // rows from sesiones (with count)
+let sessionsFiltered = []; // after client-side search
+let tutorList = [];       // distinct tutors for dropdown
+let lastAsistForExport = []; // for CSV asistencias export
+
+/* =========================
+   Boot
+========================= */
+async function boot(){
+  // default: mes actual
+  applyMonthCurrent();
+  uiGenerado.textContent = new Date().toLocaleString("es-CL");
+  await loadTutorDropdown();
+  await loadAndRender();
 }
 
-document.getElementById("btnFiltrar").onclick=cargar;
+function applyMonthCurrent(){
+  const now = new Date();
+  const desde = startOfMonth(now);
+  const hasta = endOfToday(now);
+  fDesde.value = ymd(desde);
+  fHasta.value = ymd(hasta);
+}
+
+btnReset.onclick = async ()=>{
+  applyMonthCurrent();
+  fTutor.value = "__ALL__";
+  fArea.value = "__ALL__";
+  fBuscar.value = "";
+  await loadAndRender();
+};
+
+btnAplicar.onclick = async ()=>{
+  await loadAndRender();
+};
+
+/* =========================
+   Data loading
+========================= */
+async function loadTutorDropdown(){
+  // Cargamos tutores desde sesiones (distinct) para dropdown
+  const { data, error } = await db
+    .from("sesiones")
+    .select("tutor_correo")
+    .not("tutor_correo", "is", null)
+    .order("tutor_correo", { ascending:true });
+
+  if(error){
+    // no bloqueamos: el reporte igual funciona con input manual
+    console.warn("No se pudo cargar lista tutores:", error.message);
+    return;
+  }
+
+  const set = new Set();
+  for(const r of (data||[])){
+    if(r.tutor_correo) set.add(String(r.tutor_correo).toLowerCase());
+  }
+  tutorList = Array.from(set).sort();
+
+  // repoblar manteniendo "Todos"
+  const keep = fTutor.value || "__ALL__";
+  fTutor.innerHTML = `<option value="__ALL__">Todos</option>`;
+  for(const t of tutorList){
+    const opt = document.createElement("option");
+    opt.value = t;
+    opt.textContent = t;
+    fTutor.appendChild(opt);
+  }
+  if(Array.from(fTutor.options).some(o => o.value === keep)){
+    fTutor.value = keep;
+  }else{
+    fTutor.value = "__ALL__";
+  }
+}
+
+function buildRangeISO(){
+  const d = fDesde.value ? new Date(fDesde.value+"T00:00:00") : startOfMonth(new Date());
+  const h = fHasta.value ? new Date(fHasta.value+"T23:59:59.999") : endOfToday(new Date());
+  return { fromISO: d.toISOString(), toISO: h.toISOString(), fromLocal: d, toLocal: h };
+}
+
+async function loadSessions(fromISO, toISO){
+  // Intento de traer conteo de asistencias por relación.
+  // Requiere FK sesiones.id -> asistencias_v2.sesion_id con relación detectada por Supabase.
+  const sel = "id, created_at, termino_en, campus, sala, tipo, bloque, tutor_correo, codigo6, asistencias_v2(count)";
+  const q = db
+    .from("sesiones")
+    .select(sel)
+    .gte("created_at", fromISO)
+    .lte("created_at", toISO)
+    .order("created_at", { ascending:false });
+
+  const tutor = fTutor.value;
+  const area = fArea.value;
+
+  if(tutor && tutor !== "__ALL__") q.eq("tutor_correo", tutor);
+  if(area && area !== "__ALL__") q.eq("tipo", area);
+
+  const { data, error } = await q;
+  if(error) throw error;
+
+  // Normalizar count
+  return (data||[]).map(s => {
+    const cnt = Array.isArray(s.asistencias_v2) ? (s.asistencias_v2[0]?.count ?? 0) : (s.asistencias_v2?.count ?? 0);
+    return { ...s, __asist_count: Number(cnt) || 0 };
+  });
+}
+
+async function loadAssistancesForRange(fromISO, toISO){
+  // Export asistencias filtradas por rango de created_at de sesiones:
+  // Para no hacer join complejo en SQL/RPC, hacemos:
+  // 1) obtener sesiones ids del rango (ya las tenemos)
+  // 2) buscar asistencias_v2 por sesion_id IN (...)
+  const ids = sessionsFiltered.map(s => s.id);
+  if(!ids.length) return [];
+
+  // Supabase limita IN muy grandes; por simplicidad chunkeamos.
+  const out = [];
+  const chunkSize = 200;
+  for(let i=0;i<ids.length;i+=chunkSize){
+    const chunk = ids.slice(i, i+chunkSize);
+    const { data, error } = await db
+      .from("asistencias_v2")
+      .select("id, sesion_id, correo_alumno, nombre_completo, created_at")
+      .in("sesion_id", chunk)
+      .order("created_at", { ascending:true });
+    if(error) throw error;
+    out.push(...(data||[]));
+  }
+  return out;
+}
+
+/* =========================
+   Client-side filters (search)
+========================= */
+function applyClientSearch(allSessions){
+  const q = (fBuscar.value || "").trim().toLowerCase();
+  if(!q) return allSessions;
+
+  return allSessions.filter(s => {
+    const hay = [
+      s.campus, s.sala, s.tipo, s.bloque, s.tutor_correo, s.codigo6, s.id
+    ].map(x => (x||"").toString().toLowerCase()).join(" | ");
+    return hay.includes(q);
+  });
+}
+
+/* =========================
+   Render
+========================= */
+async function loadAndRender(){
+  setStatus("Cargando…");
+  rowsEl.innerHTML = "";
+  sessions = [];
+  sessionsFiltered = [];
+  lastAsistForExport = [];
+
+  uiGenerado.textContent = new Date().toLocaleString("es-CL");
+
+  try{
+    const { fromISO, toISO, fromLocal, toLocal } = buildRangeISO();
+    const tutorLabel = (fTutor.value && fTutor.value !== "__ALL__") ? fTutor.value : "Todos los ayudantes";
+    const areaLabel = (fArea.value && fArea.value !== "__ALL__") ? fArea.value : "Todas las áreas";
+
+    uiPeriodo.textContent = `${fromLocal.toLocaleDateString("es-CL")} → ${toLocal.toLocaleDateString("es-CL")}`;
+    uiTutor.textContent = tutorLabel + " · " + areaLabel;
+
+    // 1) Cargar sesiones en rango (ya filtra por tutor/area en query)
+    const all = await loadSessions(fromISO, toISO);
+
+    // 2) Filtro cliente por búsqueda libre
+    sessionsFiltered = applyClientSearch(all);
+    sessions = all;
+
+    // 3) KPIs + tabla
+    renderKPIs(sessionsFiltered);
+    renderTable(sessionsFiltered);
+    renderCharts(sessionsFiltered);
+
+    // refrescar dropdown de tutores (opcional) sin romper selección actual
+    await loadTutorDropdown();
+
+    setStatus(`Listo. ${sessionsFiltered.length} sesiones en vista.`);
+  }catch(err){
+    console.error(err);
+    setStatus("Error: " + (err?.message || String(err)), "crimson");
+  }
+}
+
+function renderKPIs(list){
+  const total = list.length;
+  let cerradas = 0;
+  let abiertas = 0;
+  let totalHoras = 0;
+  let totalMin = 0;
+  let cntMin = 0;
+  let totalAlum = 0;
+
+  const tutSet = new Set();
+
+  for(const s of list){
+    if(s.tutor_correo) tutSet.add(String(s.tutor_correo).toLowerCase());
+    totalAlum += (s.__asist_count || 0);
+
+    if(s.termino_en){
+      cerradas++;
+      const h = hoursBetween(s.created_at, s.termino_en);
+      const m = minutesBetween(s.created_at, s.termino_en);
+      if(h !== null){
+        totalHoras += h;
+      }
+      if(m !== null){
+        totalMin += m;
+        cntMin++;
+      }
+    }else{
+      abiertas++;
+    }
+  }
+
+  const avgMin = cntMin ? Math.round(totalMin / cntMin) : 0;
+  const tutCount = tutSet.size;
+  const hpt = (tutCount && totalHoras) ? (totalHoras / tutCount) : 0;
+
+  kSesiones.textContent = total;
+  kSesionesS.textContent = `Filtradas: ${total} (de ${sessions.length})`;
+  kHoras.textContent = (Math.round(totalHoras * 10) / 10).toFixed(1);
+  kAvg.textContent = avgMin;
+  kTut.textContent = tutCount;
+  kAlum.textContent = totalAlum;
+  kCerr.textContent = cerradas;
+  kAb.textContent = abiertas;
+  kHpt.textContent = (Math.round(hpt * 10) / 10).toFixed(1);
+}
+
+function badgeFor(s){
+  if(s.termino_en) return `<span class="badge badgeOk">Cerrada</span>`;
+  return `<span class="badge badgeOpen">Abierta</span>`;
+}
+
+function fmtDur(s){
+  if(!s.termino_en) return "";
+  const m = minutesBetween(s.created_at, s.termino_en);
+  if(m === null) return "";
+  if(m < 60) return `${m} min`;
+  const h = Math.floor(m/60);
+  const mm = m % 60;
+  return `${h}h ${mm}m`;
+}
+
+function renderTable(list){
+  rowsEl.innerHTML = "";
+  for(const s of list){
+    const dur = fmtDur(s);
+    const inicioReal = fmtDT(s.created_at);
+    const termino = fmtDT(s.termino_en);
+    const fecha = fmtDateOnly(s.created_at);
+
+    const area = s.tipo || "";
+    const bloque = s.bloque || "";
+
+    const tutor = s.tutor_correo || "";
+    const campus = s.campus || "";
+    const sala = s.sala || "";
+    const codigo6 = s.codigo6 || "";
+
+    const alumnos = (s.__asist_count ?? 0);
+
+    rowsEl.insertAdjacentHTML("beforeend", `
+      <tr data-sid="${s.id}">
+        <td>${fecha}</td>
+        <td><b>${codigo6}</b></td>
+        <td>${tutor}</td>
+        <td>${area}</td>
+        <td>${campus}</td>
+        <td>${sala}</td>
+        <td>${bloque}</td>
+        <td>${inicioReal}</td>
+        <td>${termino}</td>
+        <td>${dur}</td>
+        <td><b>${alumnos}</b></td>
+        <td>${badgeFor(s)}</td>
+        <td>
+          <div class="actions">
+            <button class="smallBtn" data-action="toggle">Ver alumnos</button>
+            <button class="smallBtn" data-action="csvOne">CSV sesión</button>
+          </div>
+        </td>
+      </tr>
+      <tr class="detail" id="detail-${s.id}">
+        <td colspan="13">
+          <div class="detailGrid">
+            <div class="detailCard">
+              <div class="detailTitle">Detalle de sesión</div>
+              <div class="detailList">
+                <div><span class="muted">Sesión ID:</span> ${s.id}</div>
+                <div><span class="muted">Código:</span> ${codigo6}</div>
+                <div><span class="muted">Ayudante:</span> ${tutor}</div>
+                <div><span class="muted">Área:</span> ${area}</div>
+                <div><span class="muted">Campus/Sala:</span> ${campus} · ${sala}</div>
+                <div><span class="muted">Hora inicio (bloque):</span> ${bloque}</div>
+                <div><span class="muted">Inicio real:</span> ${inicioReal}</div>
+                <div><span class="muted">Término:</span> ${termino || "—"}</div>
+                <div><span class="muted">Duración:</span> ${dur || "—"}</div>
+              </div>
+            </div>
+            <div class="detailCard">
+              <div class="detailTitle">Alumnos en esta sesión</div>
+              <div class="detailList" id="alist-${s.id}">
+                <span class="muted">Cargando…</span>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    `);
+  }
+
+  rowsEl.querySelectorAll("button[data-action]").forEach(btn=>{
+    btn.addEventListener("click", async (ev)=>{
+      const action = ev.currentTarget.getAttribute("data-action");
+      const tr = ev.currentTarget.closest("tr[data-sid]");
+      const sid = tr?.getAttribute("data-sid");
+      if(!sid) return;
+
+      if(action === "toggle"){
+        await toggleDetail(sid);
+      }else if(action === "csvOne"){
+        await exportSingleSessionCSV(sid);
+      }
+    });
+  });
+}
+
+async function toggleDetail(sessionId){
+  const det = document.getElementById("detail-"+sessionId);
+  const list = document.getElementById("alist-"+sessionId);
+  if(!det || !list) return;
+
+  const show = (det.style.display !== "table-row");
+  det.style.display = show ? "table-row" : "none";
+  if(!show) return;
+
+  // Cargar alumnos
+  list.innerHTML = `<span class="muted">Cargando…</span>`;
+  try{
+    const { data, error } = await db
+      .from("asistencias_v2")
+      .select("nombre_completo, correo_alumno, created_at")
+      .eq("sesion_id", sessionId)
+      .order("created_at", { ascending:true });
+
+    if(error) throw error;
+
+    const rows = (data||[]);
+    if(!rows.length){
+      list.innerHTML = `<span class="muted">Sin registros aún.</span>`;
+      return;
+    }
+
+    const items = rows.map((r, idx)=>{
+      const n = (r.nombre_completo || "").trim() || "(sin nombre)";
+      const c = (r.correo_alumno || "").trim();
+      const t = fmtDT(r.created_at);
+      return `<div>${idx+1}. <b>${n}</b> · ${c} <span class="muted">(${t})</span></div>`;
+    }).join("");
+
+    list.innerHTML = items;
+  }catch(err){
+    list.innerHTML = `<span style="color:crimson;">Error cargando alumnos: ${(err?.message||err)}</span>`;
+  }
+}
+
+/* =========================
+   Charts (canvas simple)
+========================= */
+function clearCanvas(canvas){
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width, canvas.height);
+}
+
+function drawBarChart(canvas, labels, values, options={}){
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+
+  ctx.clearRect(0,0,W,H);
+
+  const pad = 36;
+  const innerW = W - pad*2;
+  const innerH = H - pad*2;
+
+  const maxV = Math.max(1, ...values);
+  const n = Math.max(1, labels.length);
+  const gap = 6;
+  const barW = Math.max(6, Math.floor((innerW - gap*(n-1)) / n));
+
+  // axes
+  ctx.strokeStyle = "#e5e7eb";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad, pad);
+  ctx.lineTo(pad, H - pad);
+  ctx.lineTo(W - pad, H - pad);
+  ctx.stroke();
+
+  // bars
+  for(let i=0;i<labels.length;i++){
+    const v = values[i] || 0;
+    const h = Math.round((v / maxV) * innerH);
+    const x = pad + i*(barW + gap);
+    const y = (H - pad) - h;
+
+    ctx.fillStyle = "#1f4a8d";
+    ctx.fillRect(x, y, barW, h);
+
+    // labels (cada cierto)
+    if(options.showEvery){
+      if(i % options.showEvery === 0 || i === labels.length-1){
+        ctx.fillStyle = "#6b7280";
+        ctx.font = "11px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(labels[i], x + barW/2, H - pad + 18);
+      }
+    }
+  }
+
+  // max label
+  ctx.fillStyle = "#6b7280";
+  ctx.font = "11px Arial";
+  ctx.textAlign = "right";
+  ctx.fillText(maxV.toFixed(1), pad - 6, pad + 4);
+  ctx.fillText("0", pad - 6, H - pad);
+}
+
+function renderCharts(list){
+  // Horas por día (cerradas)
+  const dayMap = new Map(); // yyyy-mm-dd -> hours
+  let minDay = null;
+  let maxDay = null;
+  let daysInPeriod = 0;
+
+  for(const s of list){
+    if(!s.termino_en) continue;
+    const h = hoursBetween(s.created_at, s.termino_en);
+    if(h === null) continue;
+    const k = dayKeyLocal(s.created_at);
+    dayMap.set(k, (dayMap.get(k)||0) + h);
+  }
+
+  // construir labels por rango (desde/hasta)
+  const from = fDesde.value ? new Date(fDesde.value+"T00:00:00") : startOfMonth(new Date());
+  const to = fHasta.value ? new Date(fHasta.value+"T00:00:00") : new Date();
+  const cur = new Date(from.getTime());
+  const labels = [];
+  const vals = [];
+  while(cur <= to && labels.length < 400){
+    const k = ymd(cur);
+    labels.push(k.slice(5)); // MM-DD
+    vals.push(Math.round((dayMap.get(k)||0) * 10)/10);
+    cur.setDate(cur.getDate()+1);
+  }
+  daysInPeriod = labels.length;
+
+  clearCanvas(cDia);
+  if(labels.length){
+    const every = daysInPeriod > 24 ? Math.ceil(daysInPeriod / 12) : 2;
+    drawBarChart(cDia, labels, vals, { showEvery: every });
+    cDiaHint.textContent = `Días en período: ${daysInPeriod}. (Barras = horas reales por día)`;
+  }else{
+    cDiaHint.textContent = "Sin datos para graficar.";
+  }
+
+  // Horas por tutor (top 8)
+  const tMap = new Map();
+  for(const s of list){
+    if(!s.termino_en) continue;
+    const h = hoursBetween(s.created_at, s.termino_en);
+    if(h === null) continue;
+    const t = (s.tutor_correo || "(sin tutor)").toLowerCase();
+    tMap.set(t, (tMap.get(t)||0) + h);
+  }
+  const arr = Array.from(tMap.entries()).map(([k,v])=>({k,v})).sort((a,b)=>b.v-a.v).slice(0,8);
+  const tLabels = arr.map(x => (x.k.length>16 ? x.k.slice(0,16)+"…" : x.k));
+  const tVals = arr.map(x => Math.round(x.v*10)/10);
+
+  clearCanvas(cTutor);
+  if(tLabels.length){
+    drawBarChart(cTutor, tLabels, tVals, { showEvery: 1 });
+    cTutorHint.textContent = "Top ayudantes por horas reales (sesiones cerradas).";
+  }else{
+    cTutorHint.textContent = "Sin datos para graficar.";
+  }
+}
+
+/* =========================
+   Exports
+========================= */
+btnCSV.onclick = async ()=>{
+  try{
+    const { fromLocal, toLocal } = buildRangeISO();
+    const nameTutor = (fTutor.value && fTutor.value !== "__ALL__") ? fTutor.value : "todos";
+    const nameArea = (fArea.value && fArea.value !== "__ALL__") ? fArea.value : "todas";
+    const filename = `reporte_sesiones_${fDesde.value}_${fHasta.value}_${nameTutor}_${nameArea}.csv`;
+
+    const headers = [
+      "codigo6","sesion_id","fecha","tutor_correo","area","campus","sala","hora_inicio_bloque",
+      "inicio_real","termino","duracion_min","alumnos"
+    ];
+
+    const lines = [headers.join(",")];
+
+    for(const s of sessionsFiltered){
+      const durMin = s.termino_en ? (minutesBetween(s.created_at, s.termino_en) ?? "") : "";
+      lines.push([
+        csvEscape(s.codigo6||""),
+        csvEscape(s.id||""),
+        csvEscape(fmtDateOnly(s.created_at)),
+        csvEscape(s.tutor_correo||""),
+        csvEscape(s.tipo||""),
+        csvEscape(s.campus||""),
+        csvEscape(s.sala||""),
+        csvEscape(s.bloque||""),
+        csvEscape(fmtDT(s.created_at)),
+        csvEscape(fmtDT(s.termino_en)),
+        csvEscape(durMin),
+        csvEscape(s.__asist_count ?? 0)
+      ].join(","));
+    }
+
+    downloadTextFile(filename, lines.join("\n"), "text/csv;charset=utf-8");
+  }catch(err){
+    alert("Error exportando CSV: " + (err?.message||err));
+  }
+};
+
+btnCSVAsist.onclick = async ()=>{
+  try{
+    setStatus("Preparando export de asistencias…");
+    const { fromISO, toISO } = buildRangeISO();
+
+    // Cargar asistencias de sesiones filtradas
+    const asist = await loadAssistancesForRange(fromISO, toISO);
+    lastAsistForExport = asist;
+
+    const filename = `reporte_asistencias_${fDesde.value}_${fHasta.value}.csv`;
+    const headers = [
+      "sesion_id","codigo6","tutor_correo","area","campus","sala","hora_inicio_bloque","inicio_sesion","termino_sesion",
+      "nombre_completo","correo_alumno","fecha_marcaje"
+    ];
+    const lines = [headers.join(",")];
+
+    const mapSes = new Map(sessionsFiltered.map(s => [s.id, s]));
+
+    for(const a of asist){
+      const s = mapSes.get(a.sesion_id);
+      lines.push([
+        csvEscape(a.sesion_id),
+        csvEscape(s?.codigo6||""),
+        csvEscape(s?.tutor_correo||""),
+        csvEscape(s?.tipo||""),
+        csvEscape(s?.campus||""),
+        csvEscape(s?.sala||""),
+        csvEscape(s?.bloque||""),
+        csvEscape(fmtDT(s?.created_at)),
+        csvEscape(fmtDT(s?.termino_en)),
+        csvEscape(a.nombre_completo||""),
+        csvEscape(a.correo_alumno||""),
+        csvEscape(fmtDT(a.created_at))
+      ].join(","));
+    }
+
+    downloadTextFile(filename, lines.join("\n"), "text/csv;charset=utf-8");
+    setStatus("Listo. Export realizado.");
+  }catch(err){
+    setStatus("Error: " + (err?.message||err), "crimson");
+  }
+};
+
+async function exportSingleSessionCSV(sessionId){
+  try{
+    const s = sessionsFiltered.find(x => x.id === sessionId) || sessions.find(x => x.id === sessionId);
+    if(!s) return;
+
+    const { data, error } = await db
+      .from("asistencias_v2")
+      .select("nombre_completo, correo_alumno, created_at")
+      .eq("sesion_id", sessionId)
+      .order("created_at", { ascending:true });
+
+    if(error) throw error;
+
+    const filename = `sesion_${s.codigo6||sessionId}_${fmtDateOnly(s.created_at)}.csv`;
+    const headers = [
+      "codigo6","sesion_id","tutor_correo","area","campus","sala","hora_inicio_bloque","inicio_real","termino","duracion_min",
+      "nombre_completo","correo_alumno","marcado_en"
+    ];
+    const lines = [headers.join(",")];
+
+    const durMin = s.termino_en ? (minutesBetween(s.created_at, s.termino_en) ?? "") : "";
+
+    for(const a of (data||[])){
+      lines.push([
+        csvEscape(s.codigo6||""),
+        csvEscape(sessionId),
+        csvEscape(s.tutor_correo||""),
+        csvEscape(s.tipo||""),
+        csvEscape(s.campus||""),
+        csvEscape(s.sala||""),
+        csvEscape(s.bloque||""),
+        csvEscape(fmtDT(s.created_at)),
+        csvEscape(fmtDT(s.termino_en)),
+        csvEscape(durMin),
+        csvEscape(a.nombre_completo||""),
+        csvEscape(a.correo_alumno||""),
+        csvEscape(fmtDT(a.created_at))
+      ].join(","));
+    }
+
+    downloadTextFile(filename, lines.join("\n"), "text/csv;charset=utf-8");
+  }catch(err){
+    alert("Error exportando sesión: " + (err?.message||err));
+  }
+}
 </script>
 
 </body>
