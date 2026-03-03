@@ -276,7 +276,7 @@ async function setNewInToken(){
   renderIn(url);
 
   inCountdown = TOKEN_ROTATION_SECONDS;
-  inTimer.textContent = `Próxima rotación en: ${TOKEN_ROTATION_SECONDS} s`;
+  inTimer.textContent = `Próxima rotación en: ${inCountdown} s`;
 }
 
 function startInTimers(){
@@ -318,7 +318,7 @@ async function activateCheckoutQR(){
     outbox.style.display = "block";
 
     outCountdown = CHECKOUT_SECONDS;
-    outTimer.textContent = `Expira en: ${CHECKOUT_SECONDS} s`;
+    outTimer.textContent = `Expira en: ${outCountdown} s`;
 
     stopOutTimers();
     outTick = setInterval(() => {
