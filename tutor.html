@@ -84,7 +84,6 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
       <label>Sala</label>
       <input id="sala" placeholder="Ej: CIAC-1" value="ciac" />
 
-      <!-- ✅ NUEVO: Área académica (normalizada) -->
       <label>Área (tutoría)</label>
       <select id="area">
         <option value="" selected>Selecciona…</option>
@@ -94,11 +93,9 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
         <option value="Programación">Programación</option>
       </select>
 
-      <!-- Horario simple: solo hora inicio -->
       <label>Hora inicio</label>
       <select id="horaInicio"></select>
 
-      <!-- ✅ NUEVO: Nombre tutor -->
       <label>Nombre tutor</label>
       <input id="tutorNombre" placeholder="Ej: Nombre Apellido" autocomplete="name" />
 
@@ -112,9 +109,8 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
 
       <div class="msg" id="msg"></div>
 
-      <!-- Entrada -->
       <div class="box" id="inbox">
-        <div class="kv">Entrada (token cambia cada 3 min)</div>
+        <div class="kv">Entrada (token)</div>
         <div class="row" style="margin-top:10px;">
           <img id="qrIn" width="190" height="190" alt="QR entrada" />
           <div>
@@ -123,13 +119,12 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
             <div class="smalllink">Link: <span id="inLink"></span></div>
           </div>
         </div>
-        <div class="timer" id="inTimer">Próxima rotación en: -- s</div>
+        <div class="timer" id="inTimer">Token activo mientras la sesión esté abierta.</div>
         <div class="note">
-          Recomendación: mantén el QR visible en sala. Si alguien reenvía el link, probablemente expirará antes de que lo usen.
+          Recomendación: mantén el QR visible en sala. Mientras la sesión esté abierta, el QR seguirá funcionando.
         </div>
       </div>
 
-      <!-- Resumen para reporte -->
       <div class="summary" id="summary">
         <div class="title">✅ Mentoría finalizada</div>
         <div class="line"><span class="muted">Área:</span> <span id="sumArea">--</span></div>
@@ -144,8 +139,6 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
   </div>
 
 <script>
-const TOKEN_ROTATION_SECONDS = 180; // 3 minutos (entrada)
-
 const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -169,11 +162,9 @@ const sumInicio = document.getElementById("sumInicio");
 const sumTermino = document.getElementById("sumTermino");
 const sumDuracion = document.getElementById("sumDuracion");
 
-// Inputs nuevos
+// Inputs
 const areaEl = document.getElementById("area");
 const tutorNombreEl = document.getElementById("tutorNombre");
-
-// Horario simple
 const horaInicioEl = document.getElementById("horaInicio");
 
 // State
@@ -184,14 +175,7 @@ const LS_TUTOR_PROFILE = "ciac_tutor_profile";
 let sessionId = null;
 let closed = false;
 let busy = false;
-
-// Para resumen/reporte
 let sessionCreatedAtIso = null;
-
-// Timers
-let inTick = null;
-let inRotate = null;
-let inCountdown = TOKEN_ROTATION_SECONDS;
 
 function setBusy(v){
   busy = v;
@@ -212,13 +196,6 @@ function qrUrl(url, size=190){
 function renderIn(url){
   qrIn.src = qrUrl(url, 190);
   inLink.textContent = url;
-}
-
-function stopInTimers(){
-  if (inTick) clearInterval(inTick);
-  if (inRotate) clearInterval(inRotate);
-  inTick = null;
-  inRotate = null;
 }
 
 function saveActiveToLS(payload){
@@ -264,24 +241,25 @@ function setUIForActive(){
 }
 
 function resetUIForNew(){
-  stopInTimers();
   inbox.style.display = "none";
   summaryBox.style.display = "none";
   btnEnd.disabled = true;
   inToken.textContent = "------";
   inLink.textContent = "";
-  inTimer.textContent = "Próxima rotación en: -- s";
+  inTimer.textContent = "Token activo mientras la sesión esté abierta.";
 }
 
-async function setNewInToken(){
+async function setTokenOnce(){
   if (!sessionId || closed) return;
 
   const token = rand10();
-  const expira = new Date(Date.now() + TOKEN_ROTATION_SECONDS*1000).toISOString();
 
   const { error } = await db
     .from("sesiones")
-    .update({ token_actual: token, token_expira_en: expira })
+    .update({
+      token_actual: token,
+      token_expira_en: null
+    })
     .eq("id", sessionId);
 
   if (error) {
@@ -292,24 +270,7 @@ async function setNewInToken(){
   const url = `${location.origin}/checkin.html?token=${encodeURIComponent(token)}`;
   inToken.textContent = token;
   renderIn(url);
-
-  inCountdown = TOKEN_ROTATION_SECONDS;
-  inTimer.textContent = `Próxima rotación en: ${inCountdown} s`;
-}
-
-function startInTimers(){
-  stopInTimers();
-
-  inTick = setInterval(() => {
-    if (closed) return;
-    inCountdown = Math.max(0, inCountdown - 1);
-    inTimer.textContent = `Próxima rotación en: ${inCountdown} s`;
-  }, 1000);
-
-  inRotate = setInterval(async () => {
-    if (closed) return;
-    await setNewInToken();
-  }, TOKEN_ROTATION_SECONDS*1000);
+  inTimer.textContent = "Token activo mientras la sesión esté abierta.";
 }
 
 function fmtLocal(iso){
@@ -348,7 +309,6 @@ async function endMentoria(){
   setBusy(true);
   try{
     closed = true;
-    stopInTimers();
 
     const nowIso = new Date().toISOString();
 
@@ -363,7 +323,6 @@ async function endMentoria(){
       })
       .eq("id", sessionId);
 
-    // Fallback si termino_en no existe
     if (error && (error.message || "").toLowerCase().includes("termino_en")) {
       const r2 = await db
         .from("sesiones")
@@ -386,7 +345,6 @@ async function endMentoria(){
     const saved = readActiveFromLS();
     const startIso = sessionCreatedAtIso || saved?.created_at || null;
 
-    // Perfil actual para reporte
     const tutorNombre = (tutorNombreEl.value || "").trim();
     const area = areaEl.value || "";
 
@@ -394,7 +352,7 @@ async function endMentoria(){
       sesion_id: sessionId,
       campus: saved?.campus,
       sala: saved?.sala,
-      tipo: saved?.tipo,     // aquí guardamos el área también en BD, pero para el resumen guardamos explícito
+      tipo: saved?.tipo,
       bloque: saved?.bloque,
       tutor_correo: saved?.tutor_correo,
       tutor_nombre: tutorNombre,
@@ -426,7 +384,7 @@ async function recoverIfPossible(){
 
   const { data, error } = await db
     .from("sesiones")
-    .select("id, created_at, termino_en, token_actual, token_expira_en")
+    .select("id, created_at, termino_en, token_actual")
     .eq("id", saved.sessionId)
     .single();
 
@@ -436,7 +394,6 @@ async function recoverIfPossible(){
     return;
   }
 
-  // Si ya fue finalizada, mostrar resumen y limpiar estado activo
   if (data.termino_en){
     sessionCreatedAtIso = data.created_at || saved.created_at || null;
     clearActiveFromLS();
@@ -449,15 +406,11 @@ async function recoverIfPossible(){
     inTimer.textContent = "Sesión cerrada.";
     btnEnd.disabled = true;
 
-    // resumen (usa profile local)
     const tutorNombre = (tutorNombreEl.value || "").trim();
     const area = areaEl.value || "";
     showSummary(area, tutorNombre, sessionCreatedAtIso, data.termino_en);
     return;
   }
-
-  const now = Date.now();
-  const inExp = data.token_expira_en ? Date.parse(data.token_expira_en) : 0;
 
   sessionId = data.id;
   sessionCreatedAtIso = data.created_at || saved.created_at || null;
@@ -465,23 +418,20 @@ async function recoverIfPossible(){
 
   setUIForActive();
 
-  inbox.style.display = "block";
-  if (data.token_actual && inExp > now){
+  if (data.token_actual){
     const url = `${location.origin}/checkin.html?token=${encodeURIComponent(data.token_actual)}`;
     inToken.textContent = data.token_actual;
     renderIn(url);
-    inCountdown = Math.max(0, Math.ceil((inExp - now)/1000));
-    inTimer.textContent = `Próxima rotación en: ${inCountdown} s`;
+    inTimer.textContent = "Token activo mientras la sesión esté abierta.";
   } else {
-    await setNewInToken();
+    await setTokenOnce();
   }
-  startInTimers();
 
   btnEnd.disabled = false;
   setMsg("✅ Sesión recuperada. QR de entrada activo.", "green");
 }
 
-/* ===== Horario simple: solo hora inicio ===== */
+/* Horario simple */
 function pad2(n){ return String(n).padStart(2,'0'); }
 function buildTimes(startHH=8, endHH=22, stepMin=15){
   const out = [];
@@ -508,9 +458,8 @@ function initHorario(){
   horaInicioEl.value = "10:00";
 }
 function getBloqueValue(){
-  return horaInicioEl.value; // bloque = hora inicio
+  return horaInicioEl.value;
 }
-/* ========================================== */
 
 btnGen.addEventListener("click", async () => {
   if (busy) return;
@@ -552,7 +501,6 @@ btnGen.addEventListener("click", async () => {
     return;
   }
 
-  // Guardar profile local (para próximos usos y resumen/reporte)
   saveTutorProfile();
 
   closed = false;
@@ -563,14 +511,13 @@ btnGen.addEventListener("click", async () => {
   const codigo6 = String(Math.floor(100000 + Math.random() * 900000));
   const expira10 = new Date(Date.now() + 10*60*1000).toISOString(); // compatibilidad
 
-  // En BD: usamos "tipo" para guardar el área normalizada (sin romper esquema)
   const { data, error } = await db
     .from("sesiones")
     .insert([{
       campus,
       sala,
-      tipo: area,       // ✅ área queda en sesiones.tipo
-      bloque,           // ✅ hora inicio
+      tipo: area,
+      bloque,
       tutor_correo: tutorCorreo,
       codigo6,
       expira_en: expira10
@@ -592,7 +539,7 @@ btnGen.addEventListener("click", async () => {
     sessionId,
     campus,
     sala,
-    tipo: area,        // área
+    tipo: area,
     bloque,
     tutor_correo: tutorCorreo,
     tutor_nombre: tutorNombre,
@@ -601,8 +548,7 @@ btnGen.addEventListener("click", async () => {
 
   setMsg("✅ Sesión creada. QR de entrada activo.", "green");
 
-  await setNewInToken();
-  startInTimers();
+  await setTokenOnce(); // ✅ 1 token fijo
 
   setBusy(false);
 });
