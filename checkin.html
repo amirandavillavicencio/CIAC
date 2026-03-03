@@ -24,7 +24,9 @@
     button:disabled{ opacity:.55; cursor:not-allowed; }
     .msg{ margin-top:10px; font-size:13px; min-height:18px; }
     .hint{ margin-top:12px; background:#ecfeff; border:1px solid #a5f3fc; padding:12px; border-radius:12px; font-size:12px; color:#0f172a; line-height:1.35; }
+
     .tokenOk{ margin-top:10px; background:#ecfdf5; border:1px solid #a7f3d0; padding:10px; border-radius:12px; font-size:12px; color:#065f46; display:none; }
+    .warn{ margin-top:10px; background:#fffbeb; border:1px solid #fcd34d; padding:10px; border-radius:12px; font-size:12px; color:#92400e; display:none; }
     .linkBtn{ margin-top:10px; background:transparent; color:var(--blue); border:0; padding:0; font-weight:900; cursor:pointer; }
   </style>
 </head>
@@ -48,6 +50,11 @@
 
       <!-- Estado token desde QR -->
       <div class="tokenOk" id="tokenOk">✅ Token cargado desde el QR.</div>
+
+      <!-- Advertencia (no bloqueante) por expira_en -->
+      <div class="warn" id="warnExpira">
+        ⚠️ Advertencia: esta sesión aparece fuera de ventana (posible sesión antigua), pero se permitirá el registro.
+      </div>
 
       <!-- Token manual (solo si no viene en URL o si el usuario lo activa) -->
       <div id="tokenWrap">
@@ -76,6 +83,7 @@ const correoEl = document.getElementById("correo");
 const tokenEl = document.getElementById("token");
 const tokenWrap = document.getElementById("tokenWrap");
 const tokenOk = document.getElementById("tokenOk");
+const warnExpira = document.getElementById("warnExpira");
 const btn = document.getElementById("btn");
 const btnHideToken = document.getElementById("btnHideToken");
 
@@ -88,6 +96,10 @@ function setStatus(text, color="#111827"){
   msg.textContent = text;
 }
 
+function showWarnExpira(v){
+  warnExpira.style.display = v ? "block" : "none";
+}
+
 // UX: si viene token por URL, lo cargamos y ocultamos el input para que NO pidan token manual
 if (qpToken) {
   tokenEl.value = qpToken;
@@ -98,10 +110,8 @@ if (qpToken) {
   tokenOk.style.display = "none";
 }
 
-// Si alguien llega sin QR pero igual quiere pegar token, queda visible.
-// (Opcional) Si quieres un botón para mostrar token manual aunque venga por QR:
+// Toggle para casos raros: permitir ver/pegar token manual aunque venga por QR
 tokenOk.addEventListener("click", () => {
-  // Toggle para casos raros
   tokenWrap.style.display = "block";
   btnHideToken.style.display = "inline";
 });
@@ -114,25 +124,27 @@ btnHideToken.addEventListener("click", () => {
 
 btn.addEventListener("click", async () => {
   btn.disabled = true;
+  showWarnExpira(false);
   setStatus("Validando…");
 
   const nombre_completo = (nombreEl.value || "").trim();
   const correo = (correoEl.value || "").trim().toLowerCase();
   const token = (tokenEl.value || "").trim();
 
+  // Requerido: nombre y apellido (sin validador estricto)
   if (!nombre_completo) {
     setStatus("Completa tu nombre y apellido.", "crimson");
     btn.disabled = false;
     return;
   }
 
+  // Validador correo USM
   if (!correo.endsWith("@usm.cl")) {
     setStatus("Ingresa tu correo institucional @usm.cl", "crimson");
     btn.disabled = false;
     return;
   }
 
-  // Si vino por QR, ya debería estar; si no, se pide manual
   if (!token) {
     setStatus("Escanea el QR en sala. Si entraste sin QR, pega el token.", "crimson");
     btn.disabled = false;
@@ -157,18 +169,26 @@ btn.addEventListener("click", async () => {
     return;
   }
 
-  if (sesion.expira_en && (new Date() > new Date(sesion.expira_en))) {
-    setStatus("Sesión expirada. Pide al tutor iniciar una nueva sesión.", "crimson");
+  // ✅ Bloqueo real: sesión ya cerrada
+  if (sesion.termino_en) {
+    setStatus("Sesión cerrada. Pide al tutor iniciar una nueva sesión.", "crimson");
     btn.disabled = false;
     return;
   }
 
+  // ⚠️ NO bloquear por expira_en: solo advertir
+  if (sesion.expira_en && (new Date() > new Date(sesion.expira_en))) {
+    showWarnExpira(true);
+  }
+
+  // ✅ Bloqueo real: token puntual expirado (3 min)
   if (!sesion.token_expira_en || (new Date() > new Date(sesion.token_expira_en))) {
     setStatus("Token expirado. Escanea el QR actualizado en sala.", "crimson");
     btn.disabled = false;
     return;
   }
 
+  // Insert: 1 por correo por sesión (UNIQUE (sesion_id, correo_alumno))
   const { error: e2 } = await db
     .from("asistencias_v2")
     .insert([{
