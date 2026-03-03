@@ -5,75 +5,281 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CIAC - Portal Tutor</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 500px;
-      margin: 40px auto;
-      text-align: center;
+    :root{
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --shadow: 0 10px 25px rgba(0,0,0,0.08);
+      --radius: 16px;
+      --input-radius: 12px;
+      --btn: #f4c20d; /* amarillo */
+      --btn-text: #111827;
+      --danger: #ef4444;
+      --danger-text: #ffffff;
+      --success: #10b981;
     }
-    input, select, button {
+
+    * { box-sizing: border-box; }
+
+    body{
+      margin: 0;
+      background: var(--bg);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .wrap{
       width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      box-sizing: border-box;
+      max-width: 520px;
     }
-    .active {
-      color: green;
-      font-weight: bold;
+
+    .card{
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
     }
-    .timer {
-      font-size: 1.5em;
-      margin: 15px 0;
+
+    .title{
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0 0 14px 0;
     }
-    .hint {
-      font-size: 0.9em;
-      opacity: 0.8;
-      margin-top: 6px;
+
+    .field{
+      margin: 12px 0;
+      text-align: left;
     }
-    .small-btn {
-      padding: 10px;
-      font-size: 0.95em;
-      margin-top: 6px;
+
+    label{
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    input, select{
+      width: 100%;
+      padding: 12px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--input-radius);
+      outline: none;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    input:focus, select:focus{
+      border-color: #cbd5e1;
+      box-shadow: 0 0 0 4px rgba(59,130,246,0.12);
+    }
+
+    .btn{
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 10px;
+      background: var(--btn);
+      color: var(--btn-text);
+      transition: transform 0.04s ease-in-out;
+    }
+    .btn:active{ transform: scale(0.99); }
+
+    .btn.secondary{
+      background: #111827;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .btn.danger{
+      background: var(--danger);
+      color: var(--danger-text);
+      font-weight: 800;
+    }
+
+    .row{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .pill{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: #ecfdf5;
+      color: #065f46;
+      font-weight: 800;
+      font-size: 12px;
+      margin: 6px 0 10px 0;
+    }
+
+    .sessionBox{
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-top: 12px;
+      background: #fafafa;
+      text-align: left;
+    }
+
+    .kv{
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 8px 12px;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .k{ color: var(--muted); font-weight: 700; }
+    .v{ font-weight: 700; word-break: break-word; }
+
+    .code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #fff;
+      margin-top: 8px;
+      display: inline-block;
+    }
+
+    .timer{
+      font-size: 18px;
+      font-weight: 900;
+      margin-top: 8px;
+      color: #111827;
+    }
+
+    .hint{
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 8px;
+      line-height: 1.35;
+    }
+
+    .actions{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 520px){
+      .row, .actions{ grid-template-columns: 1fr; }
+      .kv{ grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
+  <div class="wrap">
+    <div class="card">
+      <h1 class="title">Portal Tutor CIAC</h1>
 
-  <h2>Portal Tutor CIAC</h2>
+      <!-- FORM -->
+      <div id="formSection">
+        <div class="field">
+          <label for="campus">Campus</label>
+          <select id="campus">
+            <option value="Vitacura" selected>Vitacura</option>
+            <option value="San Joaquín">San Joaquín</option>
+            <option value="Casa Central">Casa Central</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
 
-  <!-- Sección formulario -->
-  <div id="formSection">
-    <input type="text" id="tutorName" placeholder="Nombre Tutor" autocomplete="name" required />
-    <input type="text" id="subject" placeholder="Asignatura" required />
-    <select id="modalidad">
-      <option value="presencial">Presencial</option>
-      <option value="online">Online</option>
-    </select>
-    <button id="startBtn" type="button">Iniciar Sesión</button>
-    <div class="hint">Tip: si recargas la página, la sesión activa se mantiene.</div>
-  </div>
+        <div class="field">
+          <label for="sala">Sala</label>
+          <input id="sala" type="text" placeholder="ciac" value="ciac" />
+        </div>
 
-  <!-- Sección sesión activa -->
-  <div id="activeSection" style="display:none;">
-    <p class="active">🟢 Sesión Activa</p>
-    <p><strong>ID:</strong> <span id="sessionId"></span></p>
-    <div class="timer" id="timer">00:00:00</div>
+        <div class="field">
+          <label for="tipoSesion">Tipo de sesión</label>
+          <input id="tipoSesion" type="text" placeholder="matemáticas" />
+        </div>
 
-    <button id="copyBtn" class="small-btn" type="button">Copiar resumen</button>
-    <button id="endBtn" type="button">Finalizar Sesión</button>
+        <div class="field">
+          <label for="bloque">Bloque</label>
+          <select id="bloque">
+            <option value="08:30-09:20">08:30-09:20</option>
+            <option value="09:30-10:20">09:30-10:20</option>
+            <option value="10:00-11:00" selected>10:00-11:00</option>
+            <option value="11:10-12:00">11:10-12:00</option>
+            <option value="12:10-13:00">12:10-13:00</option>
+            <option value="13:10-14:00">13:10-14:00</option>
+            <option value="14:10-15:00">14:10-15:00</option>
+            <option value="15:10-16:00">15:10-16:00</option>
+            <option value="16:10-17:00">16:10-17:00</option>
+            <option value="17:10-18:00">17:10-18:00</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
 
-    <div class="hint">Al finalizar, se guarda un historial local (en este navegador).</div>
+        <div class="field">
+          <label for="correoTutor">Correo tutor</label>
+          <input id="correoTutor" type="email" placeholder="nombre.apellido@usm.cl" autocomplete="email" />
+        </div>
+
+        <button id="startBtn" class="btn" type="button">Generar Código QR</button>
+        <div class="hint">
+          * Este botón crea la sesión y genera el código/token de la sesión (para el QR).<br/>
+          * Si recargas, la sesión activa se mantiene en este navegador.
+        </div>
+      </div>
+
+      <!-- ACTIVE -->
+      <div id="activeSection" style="display:none;">
+        <div class="pill">🟢 Sesión activa</div>
+
+        <div class="sessionBox">
+          <div class="kv">
+            <div class="k">Campus</div><div class="v" id="vCampus"></div>
+            <div class="k">Sala</div><div class="v" id="vSala"></div>
+            <div class="k">Tipo sesión</div><div class="v" id="vTipo"></div>
+            <div class="k">Bloque</div><div class="v" id="vBloque"></div>
+            <div class="k">Correo</div><div class="v" id="vCorreo"></div>
+          </div>
+
+          <div class="hint" style="margin-top:10px;">
+            Código de sesión (token) para QR:
+          </div>
+          <div class="code" id="sessionCode">CIAC-00000000-0000</div>
+
+          <div class="hint">Tiempo transcurrido:</div>
+          <div class="timer" id="timer">00:00:00</div>
+        </div>
+
+        <div class="actions">
+          <button id="copyBtn" class="btn secondary" type="button">Copiar resumen</button>
+          <button id="endBtn" class="btn danger" type="button">Finalizar sesión</button>
+        </div>
+
+        <div class="hint">
+          Al finalizar, se guarda un historial local (en este navegador). Luego lo conectamos a base de datos.
+        </div>
+      </div>
+    </div>
   </div>
 
 <script>
 /**
- * CIAC - Tutor MVP
- * - Evita doble sesión activa
- * - Genera ID/token "bonito"
- * - Temporizador visible
- * - Cierre con confirmación
- * - Guarda historial local de sesiones cerradas
- * - Botón "Copiar resumen"
+ * CIAC - Tutor (enfocado 100% tutor)
+ * - Diseño tipo tarjeta similar al screenshot
+ * - Lógica: no doble sesión, token bonito, persistencia, timer, cierre, resumen, historial local
  */
 
 let currentSession = null;
@@ -82,11 +288,9 @@ let timerInterval = null;
 const ACTIVE_KEY = "activeSession";
 const HISTORY_KEY = "sessions_history";
 
-function pad2(n) {
-  return String(n).padStart(2, "0");
-}
+function pad2(n){ return String(n).padStart(2, "0"); }
 
-function generateSessionId() {
+function generateSessionId(){
   // Token “bonito” y ordenable: CIAC-YYYYMMDD-#### (random 4 dígitos)
   const now = new Date();
   const y = now.getFullYear();
@@ -96,7 +300,7 @@ function generateSessionId() {
   return `CIAC-${y}${m}${d}-${rand}`;
 }
 
-function msToHMS(ms) {
+function msToHMS(ms){
   const totalSeconds = Math.floor(ms / 1000);
   const h = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
   const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
@@ -104,41 +308,37 @@ function msToHMS(ms) {
   return `${h}:${m}:${s}`;
 }
 
-function safeJsonParse(value, fallback) {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return fallback;
-  }
+function safeJsonParse(value, fallback){
+  try { return JSON.parse(value); } catch { return fallback; }
 }
 
-function getActiveSession() {
+function getActiveSession(){
   const raw = localStorage.getItem(ACTIVE_KEY);
   if (!raw) return null;
-  const session = safeJsonParse(raw, null);
-  if (!session || session.status !== "active") return null;
-  return session;
+  const s = safeJsonParse(raw, null);
+  if (!s || s.status !== "active") return null;
+  return s;
 }
 
-function setActiveSession(session) {
+function setActiveSession(session){
   localStorage.setItem(ACTIVE_KEY, JSON.stringify(session));
 }
 
-function clearActiveSession() {
+function clearActiveSession(){
   localStorage.removeItem(ACTIVE_KEY);
 }
 
-function getHistory() {
+function getHistory(){
   return safeJsonParse(localStorage.getItem(HISTORY_KEY) || "[]", []);
 }
 
-function saveToHistory(session) {
+function saveToHistory(session){
   const history = getHistory();
-  history.unshift(session); // última arriba
+  history.unshift(session);
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
 }
 
-function buildResumen(session) {
+function buildResumen(session){
   const start = new Date(session.start_at);
   const end = session.end_at ? new Date(session.end_at) : null;
   const durationText = session.duration_ms != null ? msToHMS(session.duration_ms) : "00:00:00";
@@ -146,26 +346,37 @@ function buildResumen(session) {
   return (
 `✅ Tutoría ${session.status === "closed" ? "finalizada" : "activa"}
 ID: ${session.id}
-Tutor: ${session.tutor}
-Asignatura: ${session.subject}
-Modalidad: ${session.modalidad}
+Campus: ${session.campus}
+Sala: ${session.sala}
+Tipo sesión: ${session.tipo_sesion}
+Bloque: ${session.bloque}
+Correo tutor: ${session.correo_tutor || "(sin correo)"}
 Inicio: ${start.toLocaleString()}
 ${end ? `Fin: ${end.toLocaleString()}` : "Fin: (en curso)"}
 Duración: ${durationText}`
   );
 }
 
-function showForm() {
+function showForm(){
   document.getElementById("formSection").style.display = "block";
   document.getElementById("activeSection").style.display = "none";
 }
 
-function showActiveSession() {
+function fillActiveUI(session){
+  document.getElementById("vCampus").innerText = session.campus;
+  document.getElementById("vSala").innerText = session.sala;
+  document.getElementById("vTipo").innerText = session.tipo_sesion;
+  document.getElementById("vBloque").innerText = session.bloque;
+  document.getElementById("vCorreo").innerText = session.correo_tutor || "(sin correo)";
+  document.getElementById("sessionCode").innerText = session.id;
+}
+
+function showActiveSession(){
   document.getElementById("formSection").style.display = "none";
   document.getElementById("activeSection").style.display = "block";
-  document.getElementById("sessionId").innerText = currentSession.id;
 
-  // Temporizador
+  fillActiveUI(currentSession);
+
   const startTime = new Date(currentSession.start_at);
   if (timerInterval) clearInterval(timerInterval);
 
@@ -176,30 +387,35 @@ function showActiveSession() {
   }, 1000);
 }
 
-function startSession() {
+function startSession(){
   // Bloqueo doble sesión
   const existing = getActiveSession();
-  if (existing) {
+  if (existing){
     currentSession = existing;
     alert("Ya tienes una sesión activa. Finalízala antes de crear una nueva.");
     showActiveSession();
     return;
   }
 
-  const tutor = document.getElementById("tutorName").value.trim();
-  const subject = document.getElementById("subject").value.trim();
-  const modalidad = document.getElementById("modalidad").value;
+  const campus = document.getElementById("campus").value;
+  const sala = document.getElementById("sala").value.trim();
+  const tipoSesion = document.getElementById("tipoSesion").value.trim();
+  const bloque = document.getElementById("bloque").value;
+  const correoTutor = document.getElementById("correoTutor").value.trim();
 
-  if (!tutor || !subject) {
-    alert("Completa todos los campos.");
+  // Validación mínima (sin complicar)
+  if (!sala || !tipoSesion || !bloque){
+    alert("Completa los campos obligatorios: Sala, Tipo de sesión y Bloque.");
     return;
   }
 
   const session = {
     id: generateSessionId(),
-    tutor,
-    subject,
-    modalidad,
+    campus,
+    sala,
+    tipo_sesion: tipoSesion,
+    bloque,
+    correo_tutor: correoTutor || null,
     start_at: new Date().toISOString(),
     end_at: null,
     status: "active",
@@ -211,26 +427,25 @@ function startSession() {
   showActiveSession();
 }
 
-async function copyResumen() {
+async function copyResumen(){
   if (!currentSession) return;
 
-  // Si está activa, calculamos duración “al momento”
+  // Resumen “en vivo”
   const start = new Date(currentSession.start_at);
   const now = new Date();
-  const liveSession = { ...currentSession, duration_ms: now - start };
+  const live = { ...currentSession, duration_ms: now - start };
 
-  const text = buildResumen(liveSession);
+  const text = buildResumen(live);
 
-  try {
+  try{
     await navigator.clipboard.writeText(text);
     alert("Resumen copiado ✅");
-  } catch {
-    // Fallback si el navegador bloquea clipboard
+  }catch{
     prompt("Copia el resumen:", text);
   }
 }
 
-function endSession() {
+function endSession(){
   if (!currentSession) return;
 
   if (!confirm("¿Confirma que desea finalizar esta tutoría?")) return;
@@ -246,34 +461,28 @@ function endSession() {
     duration_ms: durationMs
   };
 
-  // Guardar en historial local (MVP)
   saveToHistory(closedSession);
-
-  // Limpiar estado activo
   clearActiveSession();
   currentSession = null;
 
   if (timerInterval) clearInterval(timerInterval);
 
-  // Mostrar resumen final
   alert(buildResumen(closedSession));
-
-  // Volver al inicio
   showForm();
 
-  // Limpieza visual del timer
+  // opcional: limpiar timer visual
   document.getElementById("timer").innerText = "00:00:00";
 }
 
 // Eventos
 document.getElementById("startBtn").addEventListener("click", startSession);
-document.getElementById("endBtn").addEventListener("click", endSession);
 document.getElementById("copyBtn").addEventListener("click", copyResumen);
+document.getElementById("endBtn").addEventListener("click", endSession);
 
-// Al cargar, restaurar sesión activa si existe
+// Restaurar sesión activa al cargar
 window.addEventListener("load", () => {
   const active = getActiveSession();
-  if (active) {
+  if (active){
     currentSession = active;
     showActiveSession();
   } else {
