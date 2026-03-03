@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CIAC - Portal Tutor</title>
   <style>
     body {
@@ -14,6 +15,7 @@
       width: 100%;
       padding: 10px;
       margin: 8px 0;
+      box-sizing: border-box;
     }
     .active {
       color: green;
@@ -23,49 +25,169 @@
       font-size: 1.5em;
       margin: 15px 0;
     }
+    .hint {
+      font-size: 0.9em;
+      opacity: 0.8;
+      margin-top: 6px;
+    }
+    .small-btn {
+      padding: 10px;
+      font-size: 0.95em;
+      margin-top: 6px;
+    }
   </style>
 </head>
 <body>
 
-<h2>Portal Tutor CIAC</h2>
+  <h2>Portal Tutor CIAC</h2>
 
-<div id="formSection">
-  <input type="text" id="tutorName" placeholder="Nombre Tutor" required>
-  <input type="text" id="subject" placeholder="Asignatura" required>
-  <select id="modalidad">
-    <option value="presencial">Presencial</option>
-    <option value="online">Online</option>
-  </select>
-  <button onclick="startSession()">Iniciar Sesión</button>
-</div>
+  <!-- Sección formulario -->
+  <div id="formSection">
+    <input type="text" id="tutorName" placeholder="Nombre Tutor" autocomplete="name" required />
+    <input type="text" id="subject" placeholder="Asignatura" required />
+    <select id="modalidad">
+      <option value="presencial">Presencial</option>
+      <option value="online">Online</option>
+    </select>
+    <button id="startBtn" type="button">Iniciar Sesión</button>
+    <div class="hint">Tip: si recargas la página, la sesión activa se mantiene.</div>
+  </div>
 
-<div id="activeSection" style="display:none;">
-  <p class="active">🟢 Sesión Activa</p>
-  <p>ID: <span id="sessionId"></span></p>
-  <div class="timer" id="timer">00:00:00</div>
-  <button onclick="endSession()">Finalizar Sesión</button>
-</div>
+  <!-- Sección sesión activa -->
+  <div id="activeSection" style="display:none;">
+    <p class="active">🟢 Sesión Activa</p>
+    <p><strong>ID:</strong> <span id="sessionId"></span></p>
+    <div class="timer" id="timer">00:00:00</div>
+
+    <button id="copyBtn" class="small-btn" type="button">Copiar resumen</button>
+    <button id="endBtn" type="button">Finalizar Sesión</button>
+
+    <div class="hint">Al finalizar, se guarda un historial local (en este navegador).</div>
+  </div>
 
 <script>
+/**
+ * CIAC - Tutor MVP
+ * - Evita doble sesión activa
+ * - Genera ID/token "bonito"
+ * - Temporizador visible
+ * - Cierre con confirmación
+ * - Guarda historial local de sesiones cerradas
+ * - Botón "Copiar resumen"
+ */
+
 let currentSession = null;
 let timerInterval = null;
 
+const ACTIVE_KEY = "activeSession";
+const HISTORY_KEY = "sessions_history";
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
 function generateSessionId() {
+  // Token “bonito” y ordenable: CIAC-YYYYMMDD-#### (random 4 dígitos)
   const now = new Date();
-  return "CIAC-" + now.getFullYear() +
-    String(now.getMonth()+1).padStart(2,"0") +
-    String(now.getDate()).padStart(2,"0") +
-    "-" + Math.floor(Math.random()*1000);
+  const y = now.getFullYear();
+  const m = pad2(now.getMonth() + 1);
+  const d = pad2(now.getDate());
+  const rand = String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+  return `CIAC-${y}${m}${d}-${rand}`;
+}
+
+function msToHMS(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const h = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+  const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+  const s = String(totalSeconds % 60).padStart(2, "0");
+  return `${h}:${m}:${s}`;
+}
+
+function safeJsonParse(value, fallback) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function getActiveSession() {
+  const raw = localStorage.getItem(ACTIVE_KEY);
+  if (!raw) return null;
+  const session = safeJsonParse(raw, null);
+  if (!session || session.status !== "active") return null;
+  return session;
+}
+
+function setActiveSession(session) {
+  localStorage.setItem(ACTIVE_KEY, JSON.stringify(session));
+}
+
+function clearActiveSession() {
+  localStorage.removeItem(ACTIVE_KEY);
+}
+
+function getHistory() {
+  return safeJsonParse(localStorage.getItem(HISTORY_KEY) || "[]", []);
+}
+
+function saveToHistory(session) {
+  const history = getHistory();
+  history.unshift(session); // última arriba
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+function buildResumen(session) {
+  const start = new Date(session.start_at);
+  const end = session.end_at ? new Date(session.end_at) : null;
+  const durationText = session.duration_ms != null ? msToHMS(session.duration_ms) : "00:00:00";
+
+  return (
+`✅ Tutoría ${session.status === "closed" ? "finalizada" : "activa"}
+ID: ${session.id}
+Tutor: ${session.tutor}
+Asignatura: ${session.subject}
+Modalidad: ${session.modalidad}
+Inicio: ${start.toLocaleString()}
+${end ? `Fin: ${end.toLocaleString()}` : "Fin: (en curso)"}
+Duración: ${durationText}`
+  );
+}
+
+function showForm() {
+  document.getElementById("formSection").style.display = "block";
+  document.getElementById("activeSection").style.display = "none";
+}
+
+function showActiveSession() {
+  document.getElementById("formSection").style.display = "none";
+  document.getElementById("activeSection").style.display = "block";
+  document.getElementById("sessionId").innerText = currentSession.id;
+
+  // Temporizador
+  const startTime = new Date(currentSession.start_at);
+  if (timerInterval) clearInterval(timerInterval);
+
+  timerInterval = setInterval(() => {
+    const now = new Date();
+    const diff = now - startTime;
+    document.getElementById("timer").innerText = msToHMS(diff);
+  }, 1000);
 }
 
 function startSession() {
-  if (localStorage.getItem("activeSession")) {
+  // Bloqueo doble sesión
+  const existing = getActiveSession();
+  if (existing) {
+    currentSession = existing;
     alert("Ya tienes una sesión activa. Finalízala antes de crear una nueva.");
+    showActiveSession();
     return;
   }
 
-  const tutor = document.getElementById("tutorName").value;
-  const subject = document.getElementById("subject").value;
+  const tutor = document.getElementById("tutorName").value.trim();
+  const subject = document.getElementById("subject").value.trim();
   const modalidad = document.getElementById("modalidad").value;
 
   if (!tutor || !subject) {
@@ -80,57 +202,84 @@ function startSession() {
     modalidad,
     start_at: new Date().toISOString(),
     end_at: null,
-    status: "active"
+    status: "active",
+    duration_ms: 0
   };
 
-  localStorage.setItem("activeSession", JSON.stringify(session));
   currentSession = session;
-
+  setActiveSession(session);
   showActiveSession();
 }
 
-function showActiveSession() {
-  document.getElementById("formSection").style.display = "none";
-  document.getElementById("activeSection").style.display = "block";
-  document.getElementById("sessionId").innerText = currentSession.id;
+async function copyResumen() {
+  if (!currentSession) return;
 
-  const startTime = new Date(currentSession.start_at);
+  // Si está activa, calculamos duración “al momento”
+  const start = new Date(currentSession.start_at);
+  const now = new Date();
+  const liveSession = { ...currentSession, duration_ms: now - start };
 
-  timerInterval = setInterval(() => {
-    const now = new Date();
-    const diff = now - startTime;
+  const text = buildResumen(liveSession);
 
-    const hours = String(Math.floor(diff / 3600000)).padStart(2,"0");
-    const minutes = String(Math.floor((diff % 3600000)/60000)).padStart(2,"0");
-    const seconds = String(Math.floor((diff % 60000)/1000)).padStart(2,"0");
-
-    document.getElementById("timer").innerText = `${hours}:${minutes}:${seconds}`;
-  }, 1000);
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("Resumen copiado ✅");
+  } catch {
+    // Fallback si el navegador bloquea clipboard
+    prompt("Copia el resumen:", text);
+  }
 }
 
 function endSession() {
+  if (!currentSession) return;
+
   if (!confirm("¿Confirma que desea finalizar esta tutoría?")) return;
 
-  currentSession.end_at = new Date().toISOString();
-  currentSession.status = "closed";
+  const start = new Date(currentSession.start_at);
+  const end = new Date();
+  const durationMs = end - start;
 
-  console.log("Sesión cerrada:", currentSession);
+  const closedSession = {
+    ...currentSession,
+    end_at: end.toISOString(),
+    status: "closed",
+    duration_ms: durationMs
+  };
 
-  localStorage.removeItem("activeSession");
-  clearInterval(timerInterval);
+  // Guardar en historial local (MVP)
+  saveToHistory(closedSession);
 
-  alert("Sesión finalizada correctamente.");
-  location.reload();
+  // Limpiar estado activo
+  clearActiveSession();
+  currentSession = null;
+
+  if (timerInterval) clearInterval(timerInterval);
+
+  // Mostrar resumen final
+  alert(buildResumen(closedSession));
+
+  // Volver al inicio
+  showForm();
+
+  // Limpieza visual del timer
+  document.getElementById("timer").innerText = "00:00:00";
 }
 
-// Si ya había sesión activa al recargar
-window.onload = () => {
-  const saved = localStorage.getItem("activeSession");
-  if (saved) {
-    currentSession = JSON.parse(saved);
+// Eventos
+document.getElementById("startBtn").addEventListener("click", startSession);
+document.getElementById("endBtn").addEventListener("click", endSession);
+document.getElementById("copyBtn").addEventListener("click", copyResumen);
+
+// Al cargar, restaurar sesión activa si existe
+window.addEventListener("load", () => {
+  const active = getActiveSession();
+  if (active) {
+    currentSession = active;
     showActiveSession();
+  } else {
+    showForm();
   }
-}
+});
 </script>
 
 </body>
