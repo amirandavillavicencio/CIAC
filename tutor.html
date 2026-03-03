@@ -60,7 +60,8 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
     <div class="card">
       <h1>Control de sesión</h1>
       <p class="sub">
-        Entrada con QR dinámico (cambia cada 3 min) + salida con QR de 90s. Al terminar, finaliza la sesión para bloquear marcajes.
+        Entrada con QR dinámico (cambia cada 3 min) + salida con QR de 90s.
+        <b>Recuerda finalizar</b> al terminar. Si se te olvida, la sesión se expira automáticamente a las <b>3 horas</b>.
       </p>
 
       <label>Campus</label>
@@ -130,6 +131,7 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
 <script>
 const TOKEN_ROTATION_SECONDS = 180; // 3 minutos
 const CHECKOUT_SECONDS = 90;
+const SESSION_MAX_SECONDS = 3 * 60 * 60; // 3 horas
 
 const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
@@ -158,6 +160,9 @@ const LS_KEY = "ciac_tutor_active_session";
 let sessionId = null;
 let closed = false;
 let busy = false;
+
+// sesión expira en (ms)
+let sessionExpireMs = null;
 
 // Timers
 let inTick = null;
@@ -224,6 +229,25 @@ function readActiveFromLS(){
   }
 }
 
+function fmtHMS(totalSeconds){
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const hh = String(Math.floor(s / 3600)).padStart(2,'0');
+  const mm = String(Math.floor((s % 3600) / 60)).padStart(2,'0');
+  const ss = String(s % 60).padStart(2,'0');
+  return `${hh}:${mm}:${ss}`;
+}
+
+function getAutoCloseRemainingSeconds(){
+  if (!sessionExpireMs) return null;
+  return Math.max(0, Math.ceil((sessionExpireMs - Date.now()) / 1000));
+}
+
+function renderInTimer(){
+  const autoSec = getAutoCloseRemainingSeconds();
+  const autoTxt = (autoSec === null) ? "" : ` · Auto-cierre en: ${fmtHMS(autoSec)}`;
+  inTimer.textContent = `Próxima rotación en: ${inCountdown} s${autoTxt}`;
+}
+
 async function fetchSessionById(id){
   const { data, error } = await db
     .from("sesiones")
@@ -258,6 +282,12 @@ function resetUIForNew(){
 async function setNewInToken(){
   if (!sessionId || closed) return;
 
+  // si sesión ya expiró por tiempo, auto-cierra
+  if (sessionExpireMs && Date.now() >= sessionExpireMs) {
+    await autoCloseSession();
+    return;
+  }
+
   const token = rand10();
   const expira = new Date(Date.now() + TOKEN_ROTATION_SECONDS*1000).toISOString();
 
@@ -276,26 +306,46 @@ async function setNewInToken(){
   renderIn(url);
 
   inCountdown = TOKEN_ROTATION_SECONDS;
-  inTimer.textContent = `Próxima rotación en: ${inCountdown} s`;
+  renderInTimer();
 }
 
 function startInTimers(){
   stopInTimers();
 
-  inTick = setInterval(() => {
+  inTick = setInterval(async () => {
     if (closed) return;
+
+    // auto-cierre por duración
+    if (sessionExpireMs && Date.now() >= sessionExpireMs) {
+      await autoCloseSession();
+      return;
+    }
+
     inCountdown = Math.max(0, inCountdown - 1);
-    inTimer.textContent = `Próxima rotación en: ${inCountdown} s`;
+    renderInTimer();
   }, 1000);
 
   inRotate = setInterval(async () => {
     if (closed) return;
+
+    // auto-cierre por duración
+    if (sessionExpireMs && Date.now() >= sessionExpireMs) {
+      await autoCloseSession();
+      return;
+    }
+
     await setNewInToken();
   }, TOKEN_ROTATION_SECONDS*1000);
 }
 
 async function activateCheckoutQR(){
   if (!sessionId || closed || busy) return;
+
+  // si sesión ya expiró por tiempo, auto-cierra
+  if (sessionExpireMs && Date.now() >= sessionExpireMs) {
+    await autoCloseSession();
+    return;
+  }
 
   setBusy(true);
   try{
@@ -333,7 +383,7 @@ async function activateCheckoutQR(){
   }
 }
 
-async function closeSession(){
+async function closeSessionInternal(finalMsg, msgColor){
   if (!sessionId || busy) return;
 
   setBusy(true);
@@ -342,14 +392,14 @@ async function closeSession(){
     stopInTimers();
     stopOutTimers();
 
-    const now = new Date().toISOString();
+    const nowIso = new Date().toISOString();
     const { error } = await db
       .from("sesiones")
       .update({
         token_actual: null,
-        token_expira_en: now,
+        token_expira_en: nowIso,
         token_salida: null,
-        token_salida_expira_en: now
+        token_salida_expira_en: nowIso
       })
       .eq("id", sessionId);
 
@@ -361,7 +411,7 @@ async function closeSession(){
 
     clearActiveFromLS();
 
-    setMsg("✅ Sesión finalizada. QR inválidos.", "green");
+    setMsg(finalMsg, msgColor);
 
     inToken.textContent = "CERRADA";
     inTimer.textContent = "Sesión cerrada.";
@@ -373,6 +423,15 @@ async function closeSession(){
   } finally {
     setBusy(false);
   }
+}
+
+async function autoCloseSession(){
+  if (closed) return;
+  await closeSessionInternal("⏱️ Sesión expirada automáticamente (3 horas). QR inválidos.", "crimson");
+}
+
+async function closeSession(){
+  await closeSessionInternal("✅ Sesión finalizada. QR inválidos.", "green");
 }
 
 async function recoverIfPossible(){
@@ -389,14 +448,23 @@ async function recoverIfPossible(){
     return;
   }
 
-  const now = Date.now();
-  const inExp = data.token_expira_en ? Date.parse(data.token_expira_en) : 0;
-  const outExp = data.token_salida_expira_en ? Date.parse(data.token_salida_expira_en) : 0;
-
   sessionId = data.id;
   closed = false;
 
+  // sesión expira en
+  sessionExpireMs = data.expira_en ? Date.parse(data.expira_en) : null;
+
+  // si ya venció, auto-cierra en BD/UI
+  if (sessionExpireMs && Date.now() >= sessionExpireMs) {
+    await autoCloseSession();
+    return;
+  }
+
   setUIForActive();
+
+  const now = Date.now();
+  const inExp = data.token_expira_en ? Date.parse(data.token_expira_en) : 0;
+  const outExp = data.token_salida_expira_en ? Date.parse(data.token_salida_expira_en) : 0;
 
   inbox.style.display = "block";
   if (data.token_actual && inExp > now){
@@ -404,7 +472,7 @@ async function recoverIfPossible(){
     inToken.textContent = data.token_actual;
     renderIn(url);
     inCountdown = Math.max(0, Math.ceil((inExp - now)/1000));
-    inTimer.textContent = `Próxima rotación en: ${inCountdown} s`;
+    renderInTimer();
   } else {
     await setNewInToken();
   }
@@ -431,7 +499,7 @@ async function recoverIfPossible(){
   btnCheckout.disabled = false;
   btnClose.disabled = false;
 
-  setMsg("✅ Sesión recuperada. QR de entrada activo.", "green");
+  setMsg("✅ Sesión recuperada. Recuerda finalizar al terminar.", "green");
 }
 
 btnGen.addEventListener("click", async () => {
@@ -465,10 +533,13 @@ btnGen.addEventListener("click", async () => {
 
   closed = false;
   sessionId = null;
+  sessionExpireMs = null;
   resetUIForNew();
 
   const codigo6 = String(Math.floor(100000 + Math.random() * 900000));
-  const expira10 = new Date(Date.now() + 10*60*1000).toISOString();
+
+  // ✅ sesión expira en 3 horas
+  const expiraSesionIso = new Date(Date.now() + SESSION_MAX_SECONDS*1000).toISOString();
 
   const { data, error } = await db
     .from("sesiones")
@@ -476,9 +547,9 @@ btnGen.addEventListener("click", async () => {
       campus, sala, tipo, bloque,
       tutor_correo: tutor,
       codigo6,
-      expira_en: expira10
+      expira_en: expiraSesionIso
     }])
-    .select("id")
+    .select("id, expira_en")
     .single();
 
   if (error) {
@@ -488,16 +559,19 @@ btnGen.addEventListener("click", async () => {
   }
 
   sessionId = data.id;
+  sessionExpireMs = data.expira_en ? Date.parse(data.expira_en) : Date.now() + SESSION_MAX_SECONDS*1000;
+
   setUIForActive();
 
   saveActiveToLS({
     sessionId,
     campus, sala, tipo, bloque,
     tutor_correo: tutor,
+    expira_en: expiraSesionIso,
     created_at: new Date().toISOString()
   });
 
-  setMsg("✅ Sesión creada. QR de entrada activo.", "green");
+  setMsg("✅ Sesión creada. Recuerda finalizar al terminar.", "green");
 
   await setNewInToken();
   startInTimers();
