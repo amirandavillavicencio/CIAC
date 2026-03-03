@@ -36,10 +36,13 @@
   <div class="wrap">
     <div class="card">
       <h1>Marcar asistencia</h1>
-      <p class="sub">Escanea el QR en sala. Luego ingresa tu RUT.</p>
+      <p class="sub">Escanea el QR en sala. Luego completa tus datos.</p>
 
-      <label>RUT</label>
-      <input id="rut" placeholder="Ej: 12.345.678-5" autocomplete="off" />
+      <label>Nombre y apellido</label>
+      <input id="nombre" placeholder="Ej: Nombre Apellido" autocomplete="name" />
+
+      <label>Correo institucional</label>
+      <input id="correo" type="email" placeholder="nombre@usm.cl" autocomplete="email" />
 
       <label>Token (si no viene por QR)</label>
       <input id="token" placeholder="(se completa automáticamente)" />
@@ -48,7 +51,7 @@
       <div class="msg" id="msg"></div>
 
       <div class="hint">
-        Puedes registrar desde un celular compartido. Se permite <b>1 registro por RUT</b> en cada sesión.
+        Puedes registrar desde un celular compartido. Se permite <b>1 registro por correo</b> en cada sesión.
       </div>
     </div>
   </div>
@@ -59,10 +62,12 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const msg = document.getElementById("msg");
-const rutEl = document.getElementById("rut");
+const nombreEl = document.getElementById("nombre");
+const correoEl = document.getElementById("correo");
 const tokenEl = document.getElementById("token");
 const btn = document.getElementById("btn");
 
+// Token desde querystring
 const params = new URLSearchParams(location.search);
 const qpToken = params.get("token");
 if (qpToken) tokenEl.value = qpToken;
@@ -72,68 +77,24 @@ function setStatus(text, color="#111827"){
   msg.textContent = text;
 }
 
-function cleanRut(input){
-  return (input || "")
-    .toString()
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, "")
-    .replace(/\./g, "");
-}
-
-function formatRut(rut){
-  const r = cleanRut(rut).replace(/-/g, "");
-  if (r.length < 2) return rut;
-  const body = r.slice(0, -1);
-  const dv = r.slice(-1);
-  return `${body}-${dv}`;
-}
-
-function rutDV(body){
-  let sum = 0;
-  let mul = 2;
-  for (let i = body.length - 1; i >= 0; i--) {
-    sum += parseInt(body[i], 10) * mul;
-    mul = (mul === 7) ? 2 : mul + 1;
-  }
-  const mod = 11 - (sum % 11);
-  if (mod === 11) return "0";
-  if (mod === 10) return "K";
-  return String(mod);
-}
-
-function isValidRut(rut){
-  const r = cleanRut(rut);
-  if (!r) return false;
-  const noDash = r.replace(/-/g, "");
-  if (noDash.length < 2) return false;
-
-  const body = noDash.slice(0, -1);
-  const dv = noDash.slice(-1);
-
-  if (!/^\d+$/.test(body)) return false;
-  if (!/^[0-9K]$/.test(dv)) return false;
-  if (body.length < 7 || body.length > 9) return false;
-
-  return rutDV(body) === dv;
-}
-
-rutEl.addEventListener("blur", () => {
-  const r = rutEl.value.trim();
-  if (!r) return;
-  rutEl.value = formatRut(r);
-});
-
 btn.addEventListener("click", async () => {
   btn.disabled = true;
   setStatus("Validando…");
 
-  const rutInput = (rutEl.value || "").trim();
-  const rut = formatRut(rutInput);
+  const nombre_completo = (nombreEl.value || "").trim();
+  const correo = (correoEl.value || "").trim().toLowerCase();
   const token = (tokenEl.value || "").trim();
 
-  if (!isValidRut(rutInput)) {
-    setStatus("RUT inválido. Revisa el formato y dígito verificador.", "crimson");
+  // Requerido: nombre y apellido (sin validador estricto)
+  if (!nombre_completo) {
+    setStatus("Completa tu nombre y apellido.", "crimson");
+    btn.disabled = false;
+    return;
+  }
+
+  // Validador correo USM
+  if (!correo.endsWith("@usm.cl")) {
+    setStatus("Ingresa tu correo institucional @usm.cl", "crimson");
     btn.disabled = false;
     return;
   }
@@ -144,7 +105,9 @@ btn.addEventListener("click", async () => {
     return;
   }
 
-  const { data: rows, error: e1 } = await db.rpc("get_sesion_por_token", { p_token: token });
+  // Buscar sesión por token actual (RPC get_sesion_por_token)
+  const { data: rows, error: e1 } = await db
+    .rpc("get_sesion_por_token", { p_token: token });
 
   if (e1) {
     setStatus("Error: " + e1.message, "crimson");
@@ -153,33 +116,41 @@ btn.addEventListener("click", async () => {
   }
 
   const sesion = (rows && rows.length) ? rows[0] : null;
+
   if (!sesion) {
-    setStatus("Token inválido. Escanea el QR actualizado.", "crimson");
+    setStatus("Token inválido. Escanea el QR actualizado en sala.", "crimson");
     btn.disabled = false;
     return;
   }
 
-  if (!sesion.expira_en || (new Date() > new Date(sesion.expira_en))) {
+  // Sesión expirada (si usas expira_en para autocierre)
+  if (sesion.expira_en && (new Date() > new Date(sesion.expira_en))) {
     setStatus("Sesión expirada. Pide al tutor iniciar una nueva sesión.", "crimson");
     btn.disabled = false;
     return;
   }
 
+  // Token puntual expira (3 min si lo tienes así en tutor)
   if (!sesion.token_expira_en || (new Date() > new Date(sesion.token_expira_en))) {
-    setStatus("Token expirado. Escanea el QR actualizado.", "crimson");
+    setStatus("Token expirado. Escanea el QR actualizado en sala.", "crimson");
     btn.disabled = false;
     return;
   }
 
+  // Insert: 1 por correo por sesión (UNIQUE (sesion_id, correo_alumno))
   const { error: e2 } = await db
     .from("asistencias_v2")
-    .insert([{ sesion_id: sesion.id, rut }]);
+    .insert([{
+      sesion_id: sesion.id,
+      correo_alumno: correo,
+      nombre_completo
+    }]);
 
   if (e2) {
     const m = (e2.message || "").toLowerCase();
     const code = (e2.code || "");
     if (code === "23505" || m.includes("duplicate") || m.includes("unique")) {
-      setStatus("ℹ️ Este RUT ya está registrado en esta sesión.", "crimson");
+      setStatus("ℹ️ Este correo ya está registrado en esta sesión.", "crimson");
       btn.disabled = false;
       return;
     }
@@ -189,7 +160,10 @@ btn.addEventListener("click", async () => {
   }
 
   setStatus("✅ Asistencia registrada.", "green");
-  rutEl.value = "";
+
+  // Para celular compartido: limpiar campos para el siguiente alumno
+  nombreEl.value = "";
+  correoEl.value = "";
   btn.disabled = false;
 });
 </script>
