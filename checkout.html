@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CIAC Check-In · Confirmar salida</title>
+  <title>CIAC Check-In · Marcar salida</title>
 
   <link rel="icon" href="data:,">
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -21,6 +21,7 @@
     label{ display:block; font-size:12px; color:var(--muted); margin-top:10px; }
     input{ width:100%; padding:10px; margin-top:4px; border-radius:10px; border:1px solid #d1d5db; box-sizing:border-box; background:#fff; }
     button{ width:100%; margin-top:14px; padding:11px; border-radius:10px; border:0; background:var(--blue); color:#fff; font-weight:900; cursor:pointer; }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
     .msg{ margin-top:10px; font-size:13px; min-height:18px; }
     .hint{ margin-top:12px; background:#ecfeff; border:1px solid #a5f3fc; padding:12px; border-radius:12px; font-size:12px; color:#0f172a; line-height:1.35; }
   </style>
@@ -34,11 +35,8 @@
 
   <div class="wrap">
     <div class="card">
-      <h1>Confirmar salida</h1>
-      <p class="sub">Escanea el QR de salida mostrado por el tutor. Es válido por poco tiempo.</p>
-
-      <label>Correo institucional</label>
-      <input id="correo" type="email" placeholder="nombre@usm.cl" autocomplete="email" />
+      <h1>Marcar salida</h1>
+      <p class="sub">Escanea el QR de salida en sala. Válido por 90 segundos.</p>
 
       <label>Token de salida (si no viene por QR)</label>
       <input id="token" placeholder="(se completa automáticamente)" />
@@ -47,7 +45,7 @@
       <div class="msg" id="msg"></div>
 
       <div class="hint">
-        Para validar presencia real, la salida se confirma solo desde el <b>mismo dispositivo</b> que marcó la entrada.
+        Importante: debes marcar salida desde el <b>mismo dispositivo</b> con que marcaste entrada.
       </div>
     </div>
   </div>
@@ -58,10 +56,10 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const msg = document.getElementById("msg");
-const correoEl = document.getElementById("correo");
 const tokenEl = document.getElementById("token");
 const btn = document.getElementById("btn");
 
+// Token desde querystring
 const params = new URLSearchParams(location.search);
 const qpToken = params.get("token");
 if (qpToken) tokenEl.value = qpToken;
@@ -75,74 +73,78 @@ function getDeviceId(){
   return deviceId;
 }
 
+function setStatus(text, color="#111827"){
+  msg.style.color = color;
+  msg.textContent = text;
+}
+
 btn.addEventListener("click", async () => {
-  msg.style.color = "#111827";
-  msg.textContent = "Validando…";
+  btn.disabled = true;
+  setStatus("Validando…");
 
-  const correo = correoEl.value.trim().toLowerCase();
   const token = tokenEl.value.trim();
-  const device_id = getDeviceId();
-
-  if (!correo.endsWith("@usm.cl")) {
-    msg.style.color = "crimson";
-    msg.textContent = "Ingresa un correo @usm.cl";
-    return;
-  }
   if (!token) {
-    msg.style.color = "crimson";
-    msg.textContent = "Escanea el QR de salida o pega el token.";
+    setStatus("Escanea el QR de salida o pega el token.", "crimson");
+    btn.disabled = false;
     return;
   }
 
-  // 1) Buscar sesión por token de salida vigente
-  const { data: sesion, error: e1 } = await db
-    .from("sesiones")
-    .select("id, token_salida_expira_en")
-    .eq("token_salida", token)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // RPC por token_salida
+  const { data: rows, error: e1 } = await db
+    .rpc("get_sesion_por_token_salida", { p_token: token });
 
   if (e1) {
-    msg.style.color = "crimson";
-    msg.textContent = "Error: " + e1.message;
-    return;
-  }
-  if (!sesion) {
-    msg.style.color = "crimson";
-    msg.textContent = "Token de salida inválido. Escanea el QR actualizado.";
-    return;
-  }
-  if (!sesion.token_salida_expira_en || (new Date() > new Date(sesion.token_salida_expira_en))) {
-    msg.style.color = "crimson";
-    msg.textContent = "Token de salida expirado. Escanea el QR actualizado.";
+    setStatus("Error: " + e1.message, "crimson");
+    btn.disabled = false;
     return;
   }
 
-  // 2) Marcar checkout SOLO si existe entrada en el mismo dispositivo
+  const sesion = (rows && rows.length) ? rows[0] : null;
+  if (!sesion) {
+    setStatus("Token de salida inválido. Pide al tutor activar el QR de salida.", "crimson");
+    btn.disabled = false;
+    return;
+  }
+
+  // sesión expirada (3h)
+  if (!sesion.expira_en || (new Date() > new Date(sesion.expira_en))) {
+    setStatus("Sesión expirada. Pide al tutor iniciar una nueva sesión.", "crimson");
+    btn.disabled = false;
+    return;
+  }
+
+  // token salida puntual (90s)
+  if (!sesion.token_salida_expira_en || (new Date() > new Date(sesion.token_salida_expira_en))) {
+    setStatus("Token de salida expirado. Pide al tutor reactivar el QR de salida.", "crimson");
+    btn.disabled = false;
+    return;
+  }
+
+  const device_id = getDeviceId();
+
+  // ✅ Salida = UPDATE del registro existente (no INSERT)
   const { data: updated, error: e2 } = await db
     .from("asistencias_v2")
-    .update({ checkout_at: new Date().toISOString() })
+    .update({ salida_at: new Date().toISOString() })
     .eq("sesion_id", sesion.id)
     .eq("device_id", device_id)
-    .is("checkout_at", null)
     .select("id")
-    .maybeSingle();
+    .limit(1);
 
   if (e2) {
-    msg.style.color = "crimson";
-    msg.textContent = "Error: " + e2.message;
-    return;
-  }
-  if (!updated) {
-    msg.style.color = "crimson";
-    msg.textContent = "No se encontró tu entrada en este dispositivo. Marca entrada y salida desde el mismo equipo.";
+    setStatus("Error: " + e2.message, "crimson");
+    btn.disabled = false;
     return;
   }
 
-  msg.style.color = "green";
-  msg.textContent = "✅ Salida confirmada.";
-  correoEl.value = "";
+  if (!updated || updated.length === 0) {
+    setStatus("No se encontró tu entrada en esta sesión desde este dispositivo. Marca entrada primero desde este mismo equipo.", "crimson");
+    btn.disabled = false;
+    return;
+  }
+
+  setStatus("✅ Salida registrada.", "green");
+  btn.disabled = false;
 });
 </script>
 </body>
