@@ -84,12 +84,23 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
       <label>Sala</label>
       <input id="sala" placeholder="Ej: CIAC-1" value="ciac" />
 
-      <label>Tipo de sesión</label>
-      <input id="tipo" placeholder="Ej: Matemáticas" value="matematicas" />
+      <!-- ✅ NUEVO: Área académica (normalizada) -->
+      <label>Área (tutoría)</label>
+      <select id="area">
+        <option value="" selected>Selecciona…</option>
+        <option value="Matemática">Matemática</option>
+        <option value="Física">Física</option>
+        <option value="Química">Química</option>
+        <option value="Programación">Programación</option>
+      </select>
 
       <!-- Horario simple: solo hora inicio -->
       <label>Hora inicio</label>
       <select id="horaInicio"></select>
+
+      <!-- ✅ NUEVO: Nombre tutor -->
+      <label>Nombre tutor</label>
+      <input id="tutorNombre" placeholder="Ej: Nombre Apellido" autocomplete="name" />
 
       <label>Correo tutor</label>
       <input id="tutor" type="email" placeholder="tutor@usm.cl" value="andres.mirandav@usm.cl" />
@@ -121,6 +132,8 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
       <!-- Resumen para reporte -->
       <div class="summary" id="summary">
         <div class="title">✅ Mentoría finalizada</div>
+        <div class="line"><span class="muted">Área:</span> <span id="sumArea">--</span></div>
+        <div class="line"><span class="muted">Tutor:</span> <span id="sumTutor">--</span></div>
         <div class="line"><span class="muted">Inicio:</span> <span id="sumInicio">--</span></div>
         <div class="line"><span class="muted">Término:</span> <span id="sumTermino">--</span></div>
         <div class="line"><span class="muted">Duración:</span> <span id="sumDuracion">--</span></div>
@@ -150,9 +163,15 @@ const inTimer = document.getElementById("inTimer");
 
 // Resumen
 const summaryBox = document.getElementById("summary");
+const sumArea = document.getElementById("sumArea");
+const sumTutor = document.getElementById("sumTutor");
 const sumInicio = document.getElementById("sumInicio");
 const sumTermino = document.getElementById("sumTermino");
 const sumDuracion = document.getElementById("sumDuracion");
+
+// Inputs nuevos
+const areaEl = document.getElementById("area");
+const tutorNombreEl = document.getElementById("tutorNombre");
 
 // Horario simple
 const horaInicioEl = document.getElementById("horaInicio");
@@ -160,6 +179,8 @@ const horaInicioEl = document.getElementById("horaInicio");
 // State
 const LS_KEY = "ciac_tutor_active_session";
 const LS_LAST_CLOSED = "ciac_tutor_last_closed";
+const LS_TUTOR_PROFILE = "ciac_tutor_profile";
+
 let sessionId = null;
 let closed = false;
 let busy = false;
@@ -217,6 +238,23 @@ function readActiveFromLS(){
 }
 function saveLastClosedToLS(payload){
   localStorage.setItem(LS_LAST_CLOSED, JSON.stringify(payload));
+}
+
+function saveTutorProfile(){
+  const profile = {
+    tutor_nombre: (tutorNombreEl.value || "").trim(),
+    area: areaEl.value || ""
+  };
+  localStorage.setItem(LS_TUTOR_PROFILE, JSON.stringify(profile));
+}
+function loadTutorProfile(){
+  try{
+    const raw = localStorage.getItem(LS_TUTOR_PROFILE);
+    if (!raw) return;
+    const p = JSON.parse(raw);
+    if (p?.tutor_nombre && !tutorNombreEl.value) tutorNombreEl.value = p.tutor_nombre;
+    if (p?.area && !areaEl.value) areaEl.value = p.area;
+  }catch{}
 }
 
 function setUIForActive(){
@@ -295,7 +333,9 @@ function durationText(startIso, endIso){
   return parts.join(" ");
 }
 
-function showSummary(startIso, endIso){
+function showSummary(area, tutorNombre, startIso, endIso){
+  sumArea.textContent = area || "--";
+  sumTutor.textContent = tutorNombre || "--";
   sumInicio.textContent = fmtLocal(startIso);
   sumTermino.textContent = fmtLocal(endIso);
   sumDuracion.textContent = durationText(startIso, endIso);
@@ -343,17 +383,22 @@ async function endMentoria(){
       return;
     }
 
-    // Estado para reporte
     const saved = readActiveFromLS();
     const startIso = sessionCreatedAtIso || saved?.created_at || null;
+
+    // Perfil actual para reporte
+    const tutorNombre = (tutorNombreEl.value || "").trim();
+    const area = areaEl.value || "";
 
     saveLastClosedToLS({
       sesion_id: sessionId,
       campus: saved?.campus,
       sala: saved?.sala,
-      tipo: saved?.tipo,
+      tipo: saved?.tipo,     // aquí guardamos el área también en BD, pero para el resumen guardamos explícito
       bloque: saved?.bloque,
       tutor_correo: saved?.tutor_correo,
+      tutor_nombre: tutorNombre,
+      area: area,
       inicio_real: startIso,
       termino_en: nowIso
     });
@@ -366,7 +411,7 @@ async function endMentoria(){
     inTimer.textContent = "Sesión cerrada.";
     btnEnd.disabled = true;
 
-    showSummary(startIso, nowIso);
+    showSummary(area, tutorNombre, startIso, nowIso);
   } finally {
     setBusy(false);
   }
@@ -404,7 +449,10 @@ async function recoverIfPossible(){
     inTimer.textContent = "Sesión cerrada.";
     btnEnd.disabled = true;
 
-    showSummary(sessionCreatedAtIso, data.termino_en);
+    // resumen (usa profile local)
+    const tutorNombre = (tutorNombreEl.value || "").trim();
+    const area = areaEl.value || "";
+    showSummary(area, tutorNombre, sessionCreatedAtIso, data.termino_en);
     return;
   }
 
@@ -430,7 +478,6 @@ async function recoverIfPossible(){
   startInTimers();
 
   btnEnd.disabled = false;
-
   setMsg("✅ Sesión recuperada. QR de entrada activo.", "green");
 }
 
@@ -479,20 +526,34 @@ btnGen.addEventListener("click", async () => {
 
   const campus = document.getElementById("campus").value;
   const sala = document.getElementById("sala").value.trim();
-  const tipo = document.getElementById("tipo").value.trim();
+  const area = areaEl.value || "";
   const bloque = getBloqueValue();
-  const tutor = document.getElementById("tutor").value.trim().toLowerCase();
+  const tutorCorreo = document.getElementById("tutor").value.trim().toLowerCase();
+  const tutorNombre = (tutorNombreEl.value || "").trim();
 
-  if (!tutor.endsWith("@usm.cl")) {
+  if (!tutorCorreo.endsWith("@usm.cl")) {
     setMsg("Ingresa un correo tutor @usm.cl", "crimson");
     setBusy(false);
     return;
   }
-  if (!sala || !tipo || !bloque){
-    setMsg("Completa Sala, Tipo de sesión y Hora inicio.", "crimson");
+  if (!tutorNombre){
+    setMsg("Completa el nombre del tutor.", "crimson");
     setBusy(false);
     return;
   }
+  if (!area){
+    setMsg("Selecciona el área (tutoría).", "crimson");
+    setBusy(false);
+    return;
+  }
+  if (!sala || !bloque){
+    setMsg("Completa Sala y Hora inicio.", "crimson");
+    setBusy(false);
+    return;
+  }
+
+  // Guardar profile local (para próximos usos y resumen/reporte)
+  saveTutorProfile();
 
   closed = false;
   sessionId = null;
@@ -500,13 +561,17 @@ btnGen.addEventListener("click", async () => {
   resetUIForNew();
 
   const codigo6 = String(Math.floor(100000 + Math.random() * 900000));
-  const expira10 = new Date(Date.now() + 10*60*1000).toISOString(); // lo dejamos igual por compatibilidad
+  const expira10 = new Date(Date.now() + 10*60*1000).toISOString(); // compatibilidad
 
+  // En BD: usamos "tipo" para guardar el área normalizada (sin romper esquema)
   const { data, error } = await db
     .from("sesiones")
     .insert([{
-      campus, sala, tipo, bloque,
-      tutor_correo: tutor,
+      campus,
+      sala,
+      tipo: area,       // ✅ área queda en sesiones.tipo
+      bloque,           // ✅ hora inicio
+      tutor_correo: tutorCorreo,
       codigo6,
       expira_en: expira10
     }])
@@ -525,8 +590,12 @@ btnGen.addEventListener("click", async () => {
 
   saveActiveToLS({
     sessionId,
-    campus, sala, tipo, bloque,
-    tutor_correo: tutor,
+    campus,
+    sala,
+    tipo: area,        // área
+    bloque,
+    tutor_correo: tutorCorreo,
+    tutor_nombre: tutorNombre,
     created_at: sessionCreatedAtIso
   });
 
@@ -545,6 +614,7 @@ btnEnd.addEventListener("click", async () => {
 
 window.addEventListener("load", async () => {
   initHorario();
+  loadTutorProfile();
   await recoverIfPossible();
 });
 </script>
