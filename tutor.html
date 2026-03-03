@@ -60,7 +60,7 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
     <div class="card">
       <h1>Control de sesión</h1>
       <p class="sub">
-        Entrada con QR dinámico (cambia cada 3 min) + salida con QR de 90s. Al terminar, finaliza la sesión para bloquear marcajes.
+        Entrada con QR dinámico (cambia cada 3 min) + salida con QR de 90s. Al terminar, usa <b>Terminar mentoría</b> para registrar hora de cierre.
       </p>
 
       <label>Campus</label>
@@ -76,9 +76,25 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
       <label>Tipo de sesión</label>
       <input id="tipo" placeholder="Ej: Matemáticas" value="matematicas" />
 
-      <!-- ✅ Bloque por lista desplegable -->
-      <label>Bloque</label>
-      <select id="bloque"></select>
+      <!-- ✅ Horario dinámico: modo 1 (inicio+fin) o modo 2 (solo inicio) -->
+      <label>Horario</label>
+      <select id="horarioModo">
+        <option value="inicio_fin" selected>Inicio y fin</option>
+        <option value="solo_inicio">Solo inicio</option>
+      </select>
+
+      <div id="wrapInicioFin">
+        <label>Hora inicio</label>
+        <select id="horaInicio"></select>
+
+        <label>Hora fin</label>
+        <select id="horaFin"></select>
+      </div>
+
+      <div id="wrapSoloInicio" style="display:none;">
+        <label>Hora inicio</label>
+        <select id="horaInicioSolo"></select>
+      </div>
 
       <label>Correo tutor</label>
       <input id="tutor" type="email" placeholder="tutor@usm.cl" value="andres.mirandav@usm.cl" />
@@ -86,7 +102,7 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
       <div class="btnRow">
         <button id="btnGen" class="btn btnPrimary">Generar QR de entrada</button>
         <button id="btnCheckout" class="btn btnBlue" disabled>Activar QR de salida</button>
-        <button id="btnClose" class="btn btnDanger" disabled>Finalizar sesión</button>
+        <button id="btnEnd" class="btn btnDanger" disabled>Terminar mentoría</button>
       </div>
 
       <div class="msg" id="msg"></div>
@@ -121,7 +137,7 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
         </div>
         <div class="timer" id="outTimer">Expira en: -- s</div>
         <div class="note">
-          El alumno debe confirmar salida desde el <b>mismo dispositivo</b> que marcó entrada (por device_id).
+          (La salida sigue en 90s.)
         </div>
       </div>
 
@@ -129,8 +145,8 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
   </div>
 
 <script>
-const TOKEN_ROTATION_SECONDS = 180; // 3 minutos
-const CHECKOUT_SECONDS = 90;
+const TOKEN_ROTATION_SECONDS = 180; // 3 minutos (entrada)
+const CHECKOUT_SECONDS = 90;        // salida
 
 const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
@@ -140,7 +156,7 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const msg = document.getElementById("msg");
 const btnGen = document.getElementById("btnGen");
 const btnCheckout = document.getElementById("btnCheckout");
-const btnClose = document.getElementById("btnClose");
+const btnEnd = document.getElementById("btnEnd");
 
 const inbox = document.getElementById("inbox");
 const qrIn = document.getElementById("qrIn");
@@ -154,8 +170,13 @@ const outToken = document.getElementById("outToken");
 const outLink = document.getElementById("outLink");
 const outTimer = document.getElementById("outTimer");
 
-const bloqueEl = document.getElementById("bloque");
-const campusEl = document.getElementById("campus");
+// Horario
+const horarioModoEl = document.getElementById("horarioModo");
+const wrapInicioFin = document.getElementById("wrapInicioFin");
+const wrapSoloInicio = document.getElementById("wrapSoloInicio");
+const horaInicioEl = document.getElementById("horaInicio");
+const horaFinEl = document.getElementById("horaFin");
+const horaInicioSoloEl = document.getElementById("horaInicioSolo");
 
 // State
 const LS_KEY = "ciac_tutor_active_session";
@@ -231,7 +252,7 @@ function readActiveFromLS(){
 function setUIForActive(){
   inbox.style.display = "block";
   btnCheckout.disabled = false;
-  btnClose.disabled = false;
+  btnEnd.disabled = false;
 }
 
 function resetUIForNew(){
@@ -240,7 +261,7 @@ function resetUIForNew(){
   outbox.style.display = "none";
   inbox.style.display = "none";
   btnCheckout.disabled = true;
-  btnClose.disabled = true;
+  btnEnd.disabled = true;
   inToken.textContent = "------";
   inLink.textContent = "";
   outToken.textContent = "------";
@@ -327,7 +348,7 @@ async function activateCheckoutQR(){
   }
 }
 
-async function closeSession(){
+async function endMentoria(){
   if (!sessionId || busy) return;
 
   setBusy(true);
@@ -336,33 +357,50 @@ async function closeSession(){
     stopInTimers();
     stopOutTimers();
 
-    const now = new Date().toISOString();
-    const { error } = await db
+    const nowIso = new Date().toISOString();
+
+    // Intento 1: guardar termino_en + invalidar tokens
+    let { error } = await db
       .from("sesiones")
       .update({
+        termino_en: nowIso,
         token_actual: null,
-        token_expira_en: now,
+        token_expira_en: nowIso,
         token_salida: null,
-        token_salida_expira_en: now
+        token_salida_expira_en: nowIso
       })
       .eq("id", sessionId);
 
+    // Fallback si la columna termino_en no existe (no rompe la app)
+    if (error && (error.message || "").toLowerCase().includes("termino_en")) {
+      const r2 = await db
+        .from("sesiones")
+        .update({
+          token_actual: null,
+          token_expira_en: nowIso,
+          token_salida: null,
+          token_salida_expira_en: nowIso
+        })
+        .eq("id", sessionId);
+      error = r2.error || null;
+    }
+
     if (error) {
-      setMsg("Error al finalizar sesión: " + error.message, "crimson");
+      setMsg("Error al terminar mentoría: " + error.message, "crimson");
       closed = false;
       return;
     }
 
     clearActiveFromLS();
 
-    setMsg("✅ Sesión finalizada. QR inválidos.", "green");
+    setMsg("✅ Mentoría terminada. Se registró hora de término y QR inválidos.", "green");
 
     inToken.textContent = "CERRADA";
     inTimer.textContent = "Sesión cerrada.";
     outToken.textContent = "CERRADA";
     outTimer.textContent = "Sesión cerrada.";
 
-    btnClose.disabled = true;
+    btnEnd.disabled = true;
     btnCheckout.disabled = true;
   } finally {
     setBusy(false);
@@ -428,65 +466,83 @@ async function recoverIfPossible(){
   }
 
   btnCheckout.disabled = false;
-  btnClose.disabled = false;
+  btnEnd.disabled = false;
 
   setMsg("✅ Sesión recuperada. QR de entrada activo.", "green");
 }
 
-/* ✅ Bloques horarios (lista desplegable) */
-const BLOQUES_POR_CAMPUS = {
-  "Vitacura": [
-    "08:30-09:50",
-    "10:00-11:20",
-    "11:30-12:50",
-    "13:00-14:20",
-    "14:30-15:50",
-    "16:00-17:20",
-    "17:30-18:50",
-    "19:00-20:20"
-  ],
-  "Casa Central": [
-    "08:30-09:50",
-    "10:00-11:20",
-    "11:30-12:50",
-    "13:00-14:20",
-    "14:30-15:50",
-    "16:00-17:20",
-    "17:30-18:50",
-    "19:00-20:20"
-  ],
-  "San Joaquín": [
-    "08:30-09:50",
-    "10:00-11:20",
-    "11:30-12:50",
-    "13:00-14:20",
-    "14:30-15:50",
-    "16:00-17:20",
-    "17:30-18:50",
-    "19:00-20:20"
-  ]
-};
+/* ===== Horario dinámico ===== */
+function pad2(n){ return String(n).padStart(2,'0'); }
 
-function fillBloques(){
-  const campus = campusEl.value;
-  const bloques = BLOQUES_POR_CAMPUS[campus] || BLOQUES_POR_CAMPUS["Vitacura"];
-
-  const prev = bloqueEl.value;
-  bloqueEl.innerHTML = "";
-
-  for (const b of bloques){
-    const opt = document.createElement("option");
-    opt.value = b;
-    opt.textContent = b;
-    bloqueEl.appendChild(opt);
+function buildTimes(startHH=8, endHH=22, stepMin=15){
+  const out = [];
+  for (let h = startHH; h <= endHH; h++){
+    for (let m = 0; m < 60; m += stepMin){
+      if (h === endHH && m > 0) break;
+      out.push(`${pad2(h)}:${pad2(m)}`);
+    }
   }
-
-  // mantener selección si existía
-  if (prev && bloques.includes(prev)) bloqueEl.value = prev;
-  else bloqueEl.value = bloques[1] || bloques[0] || "";
+  return out;
 }
 
-campusEl.addEventListener("change", fillBloques);
+const TIMES = buildTimes(8, 22, 15);
+
+function fillSelect(selectEl, values){
+  selectEl.innerHTML = "";
+  for (const v of values){
+    const o = document.createElement("option");
+    o.value = v;
+    o.textContent = v;
+    selectEl.appendChild(o);
+  }
+}
+
+function refreshFinOptions(){
+  const ini = horaInicioEl.value;
+  const idx = TIMES.indexOf(ini);
+  const finValues = (idx >= 0) ? TIMES.slice(idx + 1) : TIMES.slice(1);
+  fillSelect(horaFinEl, finValues);
+
+  // default fin = ini + 60 min (si existe)
+  const targetIdx = Math.min(TIMES.length - 1, (idx >= 0 ? idx + 4 : 4)); // 4 pasos de 15min = 60min
+  const target = TIMES[targetIdx];
+  if (finValues.includes(target)) horaFinEl.value = target;
+}
+
+function initHorario(){
+  fillSelect(horaInicioEl, TIMES.slice(0, TIMES.length - 1));
+  horaInicioEl.value = "10:00";
+  refreshFinOptions();
+
+  fillSelect(horaInicioSoloEl, TIMES);
+  horaInicioSoloEl.value = "10:00";
+
+  horaInicioEl.addEventListener("change", refreshFinOptions);
+
+  function applyMode(){
+    const mode = horarioModoEl.value;
+    if (mode === "inicio_fin"){
+      wrapInicioFin.style.display = "block";
+      wrapSoloInicio.style.display = "none";
+    } else {
+      wrapInicioFin.style.display = "none";
+      wrapSoloInicio.style.display = "block";
+    }
+  }
+  horarioModoEl.addEventListener("change", applyMode);
+  applyMode();
+}
+
+function getBloqueValue(){
+  const mode = horarioModoEl.value;
+  if (mode === "inicio_fin"){
+    const ini = horaInicioEl.value;
+    const fin = horaFinEl.value;
+    return `${ini}-${fin}`;
+  }
+  return horaInicioSoloEl.value; // solo inicio
+}
+/* ============================ */
 
 btnGen.addEventListener("click", async () => {
   if (busy) return;
@@ -503,7 +559,7 @@ btnGen.addEventListener("click", async () => {
   const campus = document.getElementById("campus").value;
   const sala = document.getElementById("sala").value.trim();
   const tipo = document.getElementById("tipo").value.trim();
-  const bloque = bloqueEl.value;
+  const bloque = getBloqueValue();
   const tutor = document.getElementById("tutor").value.trim().toLowerCase();
 
   if (!tutor.endsWith("@usm.cl")) {
@@ -512,7 +568,7 @@ btnGen.addEventListener("click", async () => {
     return;
   }
   if (!sala || !tipo || !bloque){
-    setMsg("Completa Sala, Tipo de sesión y Bloque.", "crimson");
+    setMsg("Completa Sala, Tipo de sesión y Horario.", "crimson");
     setBusy(false);
     return;
   }
@@ -563,13 +619,13 @@ btnCheckout.addEventListener("click", async () => {
   await activateCheckoutQR();
 });
 
-btnClose.addEventListener("click", async () => {
-  const ok = confirm("¿Finalizar sesión? Esto invalidará QR de entrada/salida y bloqueará nuevos marcajes.");
-  if (ok) await closeSession();
+btnEnd.addEventListener("click", async () => {
+  const ok = confirm("¿Terminar mentoría? Esto registrará la hora de término e invalidará QR de entrada/salida.");
+  if (ok) await endMentoria();
 });
 
 window.addEventListener("load", async () => {
-  fillBloques();
+  initHorario();
   await recoverIfPossible();
 });
 </script>
