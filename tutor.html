@@ -405,6 +405,71 @@ input:focus, select:focus{
 .sumItem .k{ color: var(--muted); font-weight: 800; }
 .sumItem .v{ color: var(--text); font-weight: 800; text-align:right; }
 
+/* LOGIN helpers (sin cambiar el diseño global) */
+.loginWrap{
+  max-width: 520px;
+  margin: 0 auto;
+}
+.loginLogo{
+  display:flex;
+  justify-content:center;
+  margin-bottom: 10px;
+}
+.loginLogo img{
+  width: 92px;
+  height: auto;
+  border-radius: 16px;
+  border: 1px solid rgba(17,24,39,0.06);
+  box-shadow: 0 16px 34px rgba(17,24,39,0.10);
+  background:#fff;
+  padding: 10px;
+}
+.loginMeta{
+  margin-top: 10px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  flex-wrap:wrap;
+}
+.sessionPill{
+  display:inline-flex;
+  align-items:center;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(94,134,199,0.10);
+  border: 1px solid rgba(94,134,199,0.18);
+  color: var(--text);
+  font-weight: 900;
+  font-size: 12px;
+}
+.btnSmall{
+  flex: 0 0 auto;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-weight: 900;
+  cursor:pointer;
+  border: 1px solid rgba(17,24,39,0.10);
+  background: rgba(234,242,251,0.35);
+  color: var(--text);
+}
+.btnSmall:hover{
+  background: rgba(234,242,251,0.55);
+}
+.btnSmall:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+.msgAlert{
+  margin-top: 12px;
+  font-size: 13px;
+  min-height: 18px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(234,242,251,0.35);
+  border: 1px dashed rgba(17,24,39,0.10);
+}
+
 @media (max-width: 900px){
   .hero{ grid-template-columns: 1fr; }
   .heroRight{ justify-content:flex-start; }
@@ -430,159 +495,226 @@ input:focus, select:focus{
   </div>
 
   <main class="page">
-    <!-- HERO -->
-    <section class="hero">
-      <div class="heroLeft">
-        <h1 class="heroTitle">
-          CIAC
-          <span>Control de asistencia a tutorías</span>
-        </h1>
-        <p class="heroSub">
-          Genera QR para registrar asistencia en tus tutorías y controla la sesión en tiempo real.
-        </p>
-        <div class="heroChips">
-          <div class="chip">QR en sala</div>
-          <div class="chip blue">Tiempo real</div>
-          <div class="chip green">Registro listo</div>
-        </div>
-      </div>
-      <div class="heroRight">
-        <img src="hero-tutoria.png" alt="Ilustración educativa de tutoría" />
+
+    <!-- LOGIN PANEL (nuevo) -->
+    <section id="loginPanel">
+      <div class="loginWrap">
+        <section class="hero" style="grid-template-columns: 1fr; margin-top: 6px;">
+          <div class="heroLeft" style="padding: 6px 6px 2px;">
+            <div class="loginLogo">
+              <img src="logonuevociac.png" alt="Logo CIAC" />
+            </div>
+
+            <h1 class="heroTitle" style="font-size: 30px;">
+              Acceso tutor
+              <span>Inicia sesión para gestionar tu tutoría</span>
+            </h1>
+
+            <p class="heroSub" style="max-width: 64ch;">
+              Usa tu RUT sin puntos ni guion (con K si corresponde) o tu usuario administrador.
+            </p>
+
+            <div class="card" style="margin-top: 12px;">
+              <div class="cardHeader">
+                <div>
+                  <h2 class="cardTitle">Iniciar sesión</h2>
+                  <p class="cardHint">Validación interna (sin Supabase Auth por ahora).</p>
+                </div>
+              </div>
+
+              <form id="loginForm" autocomplete="on">
+                <div class="fieldRow">
+                  <div style="grid-column: 1 / -1;">
+                    <label for="loginUser">Usuario</label>
+                    <input id="loginUser" name="username" placeholder="RUT sin guion, ej: 21297045K" autocomplete="username" />
+                  </div>
+                </div>
+
+                <div class="fieldRow">
+                  <div style="grid-column: 1 / -1;">
+                    <label for="loginPass">Contraseña</label>
+                    <input id="loginPass" name="password" type="password" placeholder="Tu contraseña" autocomplete="current-password" />
+                  </div>
+                </div>
+
+                <div class="btnRow">
+                  <button id="btnLogin" type="submit" class="btn btnPrimary">Iniciar sesión</button>
+                </div>
+
+                <div class="msgAlert" id="loginMsg"></div>
+
+                <div class="note" style="margin-top:10px;">
+                  Si tienes problemas de acceso, contacta coordinación CIAC.
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
       </div>
     </section>
 
-    <!-- CARDS -->
-    <section class="grid">
-      <!-- CARD FORM -->
-      <div class="card">
-        <div class="cardHeader">
-          <div>
-            <h2 class="cardTitle">Configurar sesión</h2>
-            <p class="cardHint">Completa los datos de la tutoría y genera el QR de entrada.</p>
+    <!-- TUTOR PANEL (wrapper nuevo: contiene TODO el contenido actual) -->
+    <section id="tutorPanel" style="display:none;">
+      <!-- HERO -->
+      <section class="hero">
+        <div class="heroLeft">
+          <h1 class="heroTitle">
+            CIAC
+            <span>Control de asistencia a tutorías</span>
+          </h1>
+          <p class="heroSub">
+            Genera QR para registrar asistencia en tus tutorías y controla la sesión en tiempo real.
+          </p>
+          <div class="heroChips">
+            <div class="chip">QR en sala</div>
+            <div class="chip blue">Tiempo real</div>
+            <div class="chip green">Registro listo</div>
+          </div>
+
+          <!-- Sesión (discreto) + cerrar sesión -->
+          <div class="loginMeta">
+            <div class="sessionPill" id="sessionInfo">Sesión: —</div>
+            <button class="btnSmall" id="btnLogout" type="button">Cerrar sesión</button>
           </div>
         </div>
-
-        <div class="fieldRow">
-          <div>
-            <label for="campus">Campus</label>
-            <select id="campus">
-              <option>Casa Central</option>
-              <option>San Joaquín</option>
-              <option selected>Vitacura</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="sala">Sala</label>
-            <input id="sala" placeholder="Ej: CIAC-1" value="ciac" />
-          </div>
+        <div class="heroRight">
+          <img src="hero-tutoria.png" alt="Ilustración educativa de tutoría" />
         </div>
+      </section>
 
-        <div class="fieldRow">
-          <div>
-            <label for="area">Área (tutoría)</label>
-            <select id="area">
-              <option value="" selected>Selecciona…</option>
-              <option value="Matemática">Matemática</option>
-              <option value="Física">Física</option>
-              <option value="Química">Química</option>
-              <option value="Programación">Programación</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="horaInicio">Hora inicio</label>
-            <select id="horaInicio"></select>
-          </div>
-        </div>
-
-        <div class="fieldRow">
-          <div>
-            <label for="tutorNombre">Nombre tutor</label>
-            <input id="tutorNombre" placeholder="Ej: Nombre Apellido" autocomplete="name" />
-          </div>
-
-          <div>
-            <label for="tutor">Correo tutor</label>
-            <input id="tutor" type="email" placeholder="tutor@usm.cl" value="andres.mirandav@usm.cl" />
-          </div>
-        </div>
-
-        <div class="btnRow">
-          <button id="btnGen" class="btn btnPrimary">Generar QR de entrada</button>
-          <button id="btnEnd" class="btn btnDanger" disabled>Finalizar tutoría</button>
-        </div>
-
-        <div class="msg" id="msg"></div>
-      </div>
-
-      <!-- CARD QR ACTIVA -->
-      <div class="card">
-        <div class="cardHeader">
-          <div>
-            <h2 class="cardTitle">Sesión activa</h2>
-            <p class="cardHint">Muestra el QR al curso y monitorea asistencias registradas.</p>
-          </div>
-        </div>
-
-        <!-- IMPORTANTE: mantener IDs usados por JS -->
-        <div class="qrWrap" id="inbox">
-          <div class="kv">Entrada (token fijo)</div>
-
-          <div class="qrRow">
-            <img id="qrIn" width="190" height="190" alt="QR entrada" />
+      <!-- CARDS -->
+      <section class="grid">
+        <!-- CARD FORM -->
+        <div class="card">
+          <div class="cardHeader">
             <div>
-              <div class="kv">Token entrada</div>
-              <div class="code" id="inToken">------</div>
-
-              <div class="smalllink">
-                Link:
-                <a id="inLink" href="#" target="_blank" rel="noopener">—</a>
-              </div>
-
-              <div class="liveLine">
-                <span class="badge">Asistencias: <b id="liveCount">0</b></span>
-              </div>
+              <h2 class="cardTitle">Configurar sesión</h2>
+              <p class="cardHint">Completa los datos de la tutoría y genera el QR de entrada.</p>
             </div>
           </div>
 
-          <div class="timer" id="inTimer">Token activo mientras la sesión esté abierta.</div>
+          <div class="fieldRow">
+            <div>
+              <label for="campus">Campus</label>
+              <select id="campus">
+                <option>Casa Central</option>
+                <option>San Joaquín</option>
+                <option selected>Vitacura</option>
+              </select>
+            </div>
 
-          <div class="note">
-            Recomendación: no reenviar el link fuera de la sala. Mientras la sesión esté abierta, el QR seguirá funcionando.
+            <div>
+              <label for="sala">Sala</label>
+              <input id="sala" placeholder="Ej: CIAC-1" value="ciac" />
+            </div>
+          </div>
+
+          <div class="fieldRow">
+            <div>
+              <label for="area">Área (tutoría)</label>
+              <select id="area">
+                <option value="" selected>Selecciona…</option>
+                <option value="Matemática">Matemática</option>
+                <option value="Física">Física</option>
+                <option value="Química">Química</option>
+                <option value="Programación">Programación</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="horaInicio">Hora inicio</label>
+              <select id="horaInicio"></select>
+            </div>
+          </div>
+
+          <div class="fieldRow">
+            <div>
+              <label for="tutorNombre">Nombre tutor</label>
+              <input id="tutorNombre" placeholder="Ej: Nombre Apellido" autocomplete="name" />
+            </div>
+
+            <div>
+              <label for="tutor">Correo tutor</label>
+              <input id="tutor" type="email" placeholder="tutor@usm.cl" value="andres.mirandav@usm.cl" />
+            </div>
+          </div>
+
+          <div class="btnRow">
+            <button id="btnGen" class="btn btnPrimary">Generar QR de entrada</button>
+            <button id="btnEnd" class="btn btnDanger" disabled>Finalizar tutoría</button>
+          </div>
+
+          <div class="msg" id="msg"></div>
+        </div>
+
+        <!-- CARD QR ACTIVA -->
+        <div class="card">
+          <div class="cardHeader">
+            <div>
+              <h2 class="cardTitle">Sesión activa</h2>
+              <p class="cardHint">Muestra el QR al curso y monitorea asistencias registradas.</p>
+            </div>
+          </div>
+
+          <!-- IMPORTANTE: mantener IDs usados por JS -->
+          <div class="qrWrap" id="inbox">
+            <div class="kv">Entrada (token fijo)</div>
+
+            <div class="qrRow">
+              <img id="qrIn" width="190" height="190" alt="QR entrada" />
+              <div>
+                <div class="kv">Token entrada</div>
+                <div class="code" id="inToken">------</div>
+
+                <div class="smalllink">
+                  Link:
+                  <a id="inLink" href="#" target="_blank" rel="noopener">—</a>
+                </div>
+
+                <div class="liveLine">
+                  <span class="badge">Asistencias: <b id="liveCount">0</b></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="timer" id="inTimer">Token activo mientras la sesión esté abierta.</div>
+
+            <div class="note">
+              Recomendación: no reenviar el link fuera de la sala. Mientras la sesión esté abierta, el QR seguirá funcionando.
+            </div>
+          </div>
+
+          <div class="note" id="noSessionHint">
+            Aún no hay una sesión activa. Completa el formulario y presiona <b>Generar QR de entrada</b>.
           </div>
         </div>
 
-        <div class="note" id="noSessionHint">
-          Aún no hay una sesión activa. Completa el formulario y presiona <b>Generar QR de entrada</b>.
-        </div>
-      </div>
-
-      <!-- CARD RESUMEN -->
-      <div class="card" style="grid-column: 1 / -1;">
-        <div class="cardHeader">
-          <div>
-            <h2 class="cardTitle">Resumen de sesión</h2>
-            <p class="cardHint">Se completa automáticamente al finalizar la tutoría.</p>
+        <!-- CARD RESUMEN -->
+        <div class="card" style="grid-column: 1 / -1;">
+          <div class="cardHeader">
+            <div>
+              <h2 class="cardTitle">Resumen de sesión</h2>
+              <p class="cardHint">Se completa automáticamente al finalizar la tutoría.</p>
+            </div>
           </div>
-        </div>
 
-        <div class="summary" id="summary">
-          <div class="summaryLines">
-            <div class="sumItem"><div class="k">Área</div><div class="v" id="sumArea">--</div></div>
-            <div class="sumItem"><div class="k">Tutor</div><div class="v" id="sumTutor">--</div></div>
-            <div class="sumItem"><div class="k">Inicio</div><div class="v" id="sumInicio">--</div></div>
-            <div class="sumItem"><div class="k">Término</div><div class="v" id="sumTermino">--</div></div>
-            <div class="sumItem"><div class="k">Duración</div><div class="v" id="sumDuracion">--</div></div>
+          <div class="summary" id="summary">
+            <div class="summaryLines">
+              <div class="sumItem"><div class="k">Área</div><div class="v" id="sumArea">--</div></div>
+              <div class="sumItem"><div class="k">Tutor</div><div class="v" id="sumTutor">--</div></div>
+              <div class="sumItem"><div class="k">Inicio</div><div class="v" id="sumInicio">--</div></div>
+              <div class="sumItem"><div class="k">Término</div><div class="v" id="sumTermino">--</div></div>
+              <div class="sumItem"><div class="k">Duración</div><div class="v" id="sumDuracion">--</div></div>
 
-            <!-- ✅ NUEVO (no afecta IDs existentes del JS): participantes de la sesión -->
-            <div class="sumItem"><div class="k">Participantes</div><div class="v" id="sumParticipantes">0</div></div>
+              <!-- ✅ NUEVO (no afecta IDs existentes del JS): participantes de la sesión -->
+              <div class="sumItem"><div class="k">Participantes</div><div class="v" id="sumParticipantes">0</div></div>
+            </div>
+            <div class="note" style="margin-top:12px;">Esta información se usa para el reporte.</div>
           </div>
-          <div class="note" style="margin-top:12px;">Esta información se usa para el reporte.</div>
-        </div>
 
-        <div class="note" id="noSummaryHint">Finaliza una tutoría para ver aquí el resumen.</div>
-      </div>
+          <div class="note" id="noSummaryHint">Finaliza una tutoría para ver aquí el resumen.</div>
+        </div>
+      </section>
     </section>
   </main>
 
@@ -592,6 +724,159 @@ const AUTO_CLOSE_HOURS = 3; // expira_en NOT NULL
 const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* =========================
+   LOGIN (nuevo, mínimo)
+   ========================= */
+const LOGIN_LS_KEY = "ciac_tutor_session_v1";
+const LOGIN_EXPIRES_HOURS = 12;
+
+const loginPanel = document.getElementById("loginPanel");
+const tutorPanel = document.getElementById("tutorPanel");
+
+const loginForm = document.getElementById("loginForm");
+const loginUserEl = document.getElementById("loginUser");
+const loginPassEl = document.getElementById("loginPass");
+const btnLogin = document.getElementById("btnLogin");
+const loginMsg = document.getElementById("loginMsg");
+
+const btnLogout = document.getElementById("btnLogout");
+const sessionInfo = document.getElementById("sessionInfo");
+
+function setLoginMsg(text, color="#111827"){
+  if (!loginMsg) return;
+  loginMsg.style.color = color;
+  loginMsg.textContent = text || "";
+}
+
+function normalizeUsuario(u){
+  return (u || "").trim().toUpperCase();
+}
+
+function saveTutorLoginSession(rut){
+  const now = new Date();
+  const expires = new Date(now.getTime() + LOGIN_EXPIRES_HOURS * 60 * 60 * 1000);
+  const payload = {
+    rut: rut,
+    loggedInAt: now.toISOString(),
+    expiresAt: expires.toISOString()
+  };
+  localStorage.setItem(LOGIN_LS_KEY, JSON.stringify(payload));
+  return payload;
+}
+
+function readTutorLoginSession(){
+  try{
+    const raw = localStorage.getItem(LOGIN_LS_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s?.rut || !s?.expiresAt) return null;
+    const exp = Date.parse(s.expiresAt);
+    if (!exp || isNaN(exp) || Date.now() > exp){
+      localStorage.removeItem(LOGIN_LS_KEY);
+      return null;
+    }
+    return s;
+  }catch{
+    localStorage.removeItem(LOGIN_LS_KEY);
+    return null;
+  }
+}
+
+function clearTutorLoginSession(){
+  localStorage.removeItem(LOGIN_LS_KEY);
+}
+
+function showTutorPanel(session){
+  if (loginPanel) loginPanel.style.display = "none";
+  if (tutorPanel) tutorPanel.style.display = "block";
+  if (sessionInfo) sessionInfo.textContent = `Sesión: ${session?.rut || "—"}`;
+}
+
+function showLoginPanel(){
+  if (tutorPanel) tutorPanel.style.display = "none";
+  if (loginPanel) loginPanel.style.display = "block";
+  if (sessionInfo) sessionInfo.textContent = "Sesión: —";
+  if (loginPassEl) loginPassEl.value = "";
+}
+
+async function doLogin(usuario, password){
+  const u = normalizeUsuario(usuario);
+  console.log("[CIAC] login attempt", u);
+
+  try{
+    const { data, error } = await db.rpc("validar_tutor", { p_rut: u, p_password: password });
+    console.log("[CIAC] login result", data);
+
+    if (error){
+      console.error("[CIAC] login error", error);
+      return { ok: false, error };
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row || row.ok !== true){
+      return { ok: false, row };
+    }
+
+    // guardar sesión local 12h
+    const sess = saveTutorLoginSession(row.rut || u);
+
+    // aviso must_change_password
+    if (row.must_change_password === true){
+      setLoginMsg("Tu contraseña debe ser actualizada por coordinación", "#111827");
+      // dejamos el aviso visible, pero igual permitimos acceso (requerimiento: solo aviso)
+    } else {
+      setLoginMsg("", "#111827");
+    }
+
+    showTutorPanel(sess);
+    return { ok: true, row, sess };
+  }catch(err){
+    console.error("[CIAC] login error", err);
+    return { ok: false, error: err };
+  }
+}
+
+function setLoginBusy(isBusy){
+  if (btnLogin) btnLogin.disabled = !!isBusy;
+  if (loginUserEl) loginUserEl.disabled = !!isBusy;
+  if (loginPassEl) loginPassEl.disabled = !!isBusy;
+}
+
+if (loginForm){
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const usuario = (loginUserEl?.value || "").trim();
+    const password = (loginPassEl?.value || "");
+
+    if (!usuario || !password){
+      setLoginMsg("Completa usuario y contraseña", "crimson");
+      return;
+    }
+
+    setLoginBusy(true);
+    setLoginMsg("Validando...", "#111827");
+
+    const res = await doLogin(usuario, password);
+
+    if (!res.ok){
+      setLoginMsg("Usuario o contraseña incorrectos", "crimson");
+    }
+    setLoginBusy(false);
+  });
+}
+
+if (btnLogout){
+  btnLogout.addEventListener("click", () => {
+    clearTutorLoginSession();
+    showLoginPanel();
+  });
+}
+
+/* =========================
+   (código existente abajo)
+   ========================= */
 
 // UI
 const msg = document.getElementById("msg");
@@ -1081,9 +1366,26 @@ btnEnd.addEventListener("click", async () => {
 });
 
 window.addEventListener("load", async () => {
+  // 1) gating login
+  const sess = readTutorLoginSession();
+  if (sess) {
+    showTutorPanel(sess);
+  } else {
+    showLoginPanel();
+  }
+
+  // 2) init resto (sin romper lógica existente)
   initHorario();
   loadTutorProfile();
-  await recoverIfPossible();
+
+  // OJO: solo recupera sesión activa si el panel tutor está habilitado
+  // (evita llamadas/flujo si está bloqueado por login)
+  if (readTutorLoginSession()){
+    await recoverIfPossible();
+  } else {
+    // limpieza visual por si algo quedó en DOM (seguro)
+    resetUIForNew();
+  }
 });
 </script>
 
