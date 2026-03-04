@@ -139,13 +139,16 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
   </div>
 
 <script>
-const AUTO_CLOSE_HOURS = 3; // expira_en NOT NULL (y sirve como fallback de expiración)
+const AUTO_CLOSE_HOURS = 3;
 
+// === Supabase ===
 const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const EMAIL_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/send-session-summary`;
+// ✅ Tu Edge Function real (según la captura del Dashboard)
+const EDGE_FUNCTION_NAME = "super-handler";
+const EMAIL_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/${EDGE_FUNCTION_NAME}`;
 
 // UI
 const msg = document.getElementById("msg");
@@ -185,12 +188,9 @@ let expiraEnIsoState = null;
 function setBusy(v){
   busy = v;
   btnGen.disabled = v;
-
-  // btnEnd depende de: sesión activa + no busy
   const shouldEnableEnd = (!!sessionId && !closed && !v);
   btnEnd.disabled = !shouldEnableEnd;
 }
-
 function setMsg(text, color="#111827"){
   msg.style.color = color;
   msg.textContent = text;
@@ -200,41 +200,29 @@ function rand10(){
   const r = (crypto?.randomUUID ? crypto.randomUUID().replace(/-/g,'') : (Date.now()+''+Math.random()).replace('.',''));
   return r.slice(0, 10);
 }
-
 function qrUrl(url, size=190){
   return "https://api.qrserver.com/v1/create-qr-code/?size="+size+"x"+size+"&data=" + encodeURIComponent(url);
 }
-
 function renderIn(url){
   qrIn.src = qrUrl(url, 190);
   inLink.textContent = url;
 }
-
 function checkinUrlWithToken(token){
-  // robusto aunque no estés en el root del dominio
   const base = new URL("checkin.html", location.href);
   base.searchParams.set("token", token);
   return base.href;
 }
 
-function saveActiveToLS(payload){
-  localStorage.setItem(LS_KEY, JSON.stringify(payload));
-}
-function clearActiveFromLS(){
-  localStorage.removeItem(LS_KEY);
-}
+function saveActiveToLS(payload){ localStorage.setItem(LS_KEY, JSON.stringify(payload)); }
+function clearActiveFromLS(){ localStorage.removeItem(LS_KEY); }
 function readActiveFromLS(){
   try{
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
-  }catch{
-    return null;
-  }
+  }catch{ return null; }
 }
-function saveLastClosedToLS(payload){
-  localStorage.setItem(LS_LAST_CLOSED, JSON.stringify(payload));
-}
+function saveLastClosedToLS(payload){ localStorage.setItem(LS_LAST_CLOSED, JSON.stringify(payload)); }
 
 function saveTutorProfile(){
   const profile = {
@@ -243,7 +231,6 @@ function saveTutorProfile(){
   };
   localStorage.setItem(LS_TUTOR_PROFILE, JSON.stringify(profile));
 }
-
 function loadTutorProfile(){
   try{
     const raw = localStorage.getItem(LS_TUTOR_PROFILE);
@@ -273,9 +260,6 @@ async function setInTokenOnce(){
   if (!sessionId || closed) return;
 
   const token = rand10();
-
-  // IMPORTANTE: evitamos null por si token_expira_en es NOT NULL
-  // Preferimos expira_en de la sesión. Si no está, fallback a now+AUTO_CLOSE_HOURS
   const fallbackExp = new Date(Date.now() + AUTO_CLOSE_HOURS * 60 * 60 * 1000).toISOString();
   const tokenExp = expiraEnIsoState || fallbackExp;
 
@@ -304,7 +288,6 @@ function fmtLocal(iso){
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleString("es-CL", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", second:"2-digit" });
 }
-
 function durationText(startIso, endIso){
   const a = Date.parse(startIso || "");
   const b = Date.parse(endIso || "");
@@ -318,7 +301,6 @@ function durationText(startIso, endIso){
   parts.push(`${s}s`);
   return parts.join(" ");
 }
-
 function showSummary(area, tutorNombre, startIso, endIso){
   sumArea.textContent = area || "--";
   sumTutor.textContent = tutorNombre || "--";
@@ -332,12 +314,24 @@ async function sendSummaryEmail(sesionId){
   try{
     const res = await fetch(EMAIL_FUNCTION_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+        "apikey": SUPABASE_ANON_KEY
+      },
       body: JSON.stringify({ sesion_id: sesionId })
     });
-    const j = await res.json().catch(()=> ({}));
-    if (!res.ok) throw new Error(j?.error || "No se pudo enviar el correo.");
+
+    const text = await res.text();
+    let j = {};
+    try { j = JSON.parse(text); } catch {}
+
+    if (!res.ok){
+      const msgErr = (j && (j.error || j.message)) ? (j.error || j.message) : text;
+      throw new Error(msgErr || ("HTTP " + res.status));
+    }
     return true;
+
   }catch(e){
     setMsg("⚠️ Mentoría finalizada, pero no se pudo enviar el correo: " + (e.message || e), "crimson");
     return false;
@@ -350,7 +344,6 @@ async function endMentoria(){
   setBusy(true);
   try{
     closed = true;
-
     const nowIso = new Date().toISOString();
 
     let { error } = await db
@@ -364,7 +357,6 @@ async function endMentoria(){
       })
       .eq("id", sessionId);
 
-    // fallback si la columna termino_en no existe (compat)
     if (error && (error.message || "").toLowerCase().includes("termino_en")) {
       const r2 = await db
         .from("sesiones")
@@ -406,7 +398,6 @@ async function endMentoria(){
     clearActiveFromLS();
 
     setMsg("✅ Mentoría finalizada. Se registró hora de término.", "green");
-
     inToken.textContent = "CERRADA";
     inTimer.textContent = "Sesión cerrada.";
     btnEnd.disabled = true;
@@ -505,9 +496,7 @@ function initHorario(){
   fillSelect(horaInicioEl, TIMES);
   horaInicioEl.value = "10:00";
 }
-function getBloqueValue(){
-  return horaInicioEl.value;
-}
+function getBloqueValue(){ return horaInicioEl.value; }
 
 btnGen.addEventListener("click", async () => {
   if (busy) return;
