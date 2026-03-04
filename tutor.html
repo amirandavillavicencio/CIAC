@@ -71,7 +71,7 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
     <div class="card">
       <h1>Control de sesión</h1>
       <p class="sub">
-        Entrada con QR dinámico (cambia cada 3 min). Al terminar, usa <b>Finalizar mentoría</b> para registrar hora de cierre.
+        Entrada con QR fijo (no expira). Al terminar, usa <b>Finalizar mentoría</b> para registrar hora de cierre y enviar resumen por correo.
       </p>
 
       <label>Campus</label>
@@ -110,7 +110,7 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
       <div class="msg" id="msg"></div>
 
       <div class="box" id="inbox">
-        <div class="kv">Entrada (token)</div>
+        <div class="kv">Entrada (token fijo)</div>
         <div class="row" style="margin-top:10px;">
           <img id="qrIn" width="190" height="190" alt="QR entrada" />
           <div>
@@ -121,7 +121,7 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
         </div>
         <div class="timer" id="inTimer">Token activo mientras la sesión esté abierta.</div>
         <div class="note">
-          Recomendación: mantén el QR visible en sala. Mientras la sesión esté abierta, el QR seguirá funcionando.
+          Recomendación: no reenviar el link fuera de la sala. Mientras la sesión esté abierta, el QR seguirá funcionando.
         </div>
       </div>
 
@@ -142,6 +142,9 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
 const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ✅ URL Edge Function (correo)
+const EMAIL_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/send-session-summary`;
 
 // UI
 const msg = document.getElementById("msg");
@@ -180,6 +183,7 @@ let sessionCreatedAtIso = null;
 function setBusy(v){
   busy = v;
   btnGen.disabled = v || false;
+  btnEnd.disabled = v || btnEnd.disabled;
 }
 function setMsg(text, color="#111827"){
   msg.style.color = color;
@@ -249,7 +253,7 @@ function resetUIForNew(){
   inTimer.textContent = "Token activo mientras la sesión esté abierta.";
 }
 
-async function setTokenOnce(){
+async function setInTokenOnce(){
   if (!sessionId || closed) return;
 
   const token = rand10();
@@ -303,6 +307,23 @@ function showSummary(area, tutorNombre, startIso, endIso){
   summaryBox.style.display = "block";
 }
 
+// ✅ Enviar correo (no rompe el cierre si falla)
+async function sendSummaryEmail(sesionId){
+  try{
+    const res = await fetch(EMAIL_FUNCTION_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sesion_id: sesionId })
+    });
+    const j = await res.json().catch(()=> ({}));
+    if (!res.ok) throw new Error(j?.error || "No se pudo enviar el correo.");
+    return true;
+  }catch(e){
+    setMsg("⚠️ Mentoría finalizada, pero no se pudo enviar el correo: " + (e.message || e), "crimson");
+    return false;
+  }
+}
+
 async function endMentoria(){
   if (!sessionId || busy) return;
 
@@ -312,6 +333,7 @@ async function endMentoria(){
 
     const nowIso = new Date().toISOString();
 
+    // Guardar termino_en + invalidar token
     let { error } = await db
       .from("sesiones")
       .update({
@@ -323,6 +345,7 @@ async function endMentoria(){
       })
       .eq("id", sessionId);
 
+    // Fallback si termino_en no existe
     if (error && (error.message || "").toLowerCase().includes("termino_en")) {
       const r2 = await db
         .from("sesiones")
@@ -370,6 +393,10 @@ async function endMentoria(){
     btnEnd.disabled = true;
 
     showSummary(area, tutorNombre, startIso, nowIso);
+
+    // ✅ Envía correo automático
+    await sendSummaryEmail(sessionId);
+
   } finally {
     setBusy(false);
   }
@@ -394,6 +421,7 @@ async function recoverIfPossible(){
     return;
   }
 
+  // Si ya fue finalizada
   if (data.termino_en){
     sessionCreatedAtIso = data.created_at || saved.created_at || null;
     clearActiveFromLS();
@@ -424,7 +452,7 @@ async function recoverIfPossible(){
     renderIn(url);
     inTimer.textContent = "Token activo mientras la sesión esté abierta.";
   } else {
-    await setTokenOnce();
+    await setInTokenOnce();
   }
 
   btnEnd.disabled = false;
@@ -509,7 +537,6 @@ btnGen.addEventListener("click", async () => {
   resetUIForNew();
 
   const codigo6 = String(Math.floor(100000 + Math.random() * 900000));
-  const expira10 = new Date(Date.now() + 10*60*1000).toISOString(); // compatibilidad
 
   const { data, error } = await db
     .from("sesiones")
@@ -519,8 +546,7 @@ btnGen.addEventListener("click", async () => {
       tipo: area,
       bloque,
       tutor_correo: tutorCorreo,
-      codigo6,
-      expira_en: expira10
+      codigo6
     }])
     .select("id, created_at")
     .single();
@@ -548,13 +574,13 @@ btnGen.addEventListener("click", async () => {
 
   setMsg("✅ Sesión creada. QR de entrada activo.", "green");
 
-  await setTokenOnce(); // ✅ 1 token fijo
+  await setInTokenOnce();
 
   setBusy(false);
 });
 
 btnEnd.addEventListener("click", async () => {
-  const ok = confirm("¿Finalizar mentoría? Esto registrará la hora de término e invalidará el QR.");
+  const ok = confirm("¿Finalizar mentoría? Esto registrará la hora de término e invalidará el QR y enviará correo.");
   if (ok) await endMentoria();
 });
 
