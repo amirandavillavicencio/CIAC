@@ -139,6 +139,8 @@ img{ border:1px solid var(--line); border-radius:12px; padding:10px; background:
   </div>
 
 <script>
+const AUTO_CLOSE_HOURS = 3; // ✅ autocierre operacional (expira_en NOT NULL en BD)
+
 const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -537,6 +539,7 @@ btnGen.addEventListener("click", async () => {
   resetUIForNew();
 
   const codigo6 = String(Math.floor(100000 + Math.random() * 900000));
+  const expiraEnIso = new Date(Date.now() + AUTO_CLOSE_HOURS * 60 * 60 * 1000).toISOString(); // ✅ FIX expira_en NOT NULL
 
   const { data, error } = await db
     .from("sesiones")
@@ -546,7 +549,8 @@ btnGen.addEventListener("click", async () => {
       tipo: area,
       bloque,
       tutor_correo: tutorCorreo,
-      codigo6
+      codigo6,
+      expira_en: expiraEnIso
     }])
     .select("id, created_at")
     .single();
