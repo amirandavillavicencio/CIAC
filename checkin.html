@@ -43,7 +43,7 @@
       <input id="nombre" placeholder="Ej: Nombre Apellido" autocomplete="name" />
 
       <label>Correo institucional</label>
-      <input id="correo" type="email" placeholder="nombre@usm.cl" autocomplete="email" />
+      <input id="correo" type="email" placeholder="nombre@usm.cl" autocomplete="email" inputmode="email" />
 
       <!-- Token: se autocompleta por QR; lo dejamos por si alguien lo pega manual -->
       <div id="tokenWrap">
@@ -72,21 +72,22 @@ const tokenEl = document.getElementById("token");
 const tokenWrap = document.getElementById("tokenWrap");
 const btn = document.getElementById("btn");
 
-// Token desde querystring (QR)
-const params = new URLSearchParams(location.search);
-const qpToken = params.get("token");
-if (qpToken) {
-  tokenEl.value = qpToken;
-  // Si viene por QR, opcionalmente ocultamos el campo para que no “pida token”
-  tokenWrap.classList.add("hide");
-}
-
 function setStatus(text, color="#111827"){
   msg.style.color = color;
   msg.textContent = text;
 }
 
-btn.addEventListener("click", async () => {
+// Token desde querystring (QR)
+const params = new URLSearchParams(location.search);
+const qpToken = params.get("token");
+if (qpToken) {
+  tokenEl.value = qpToken;
+  tokenWrap.classList.add("hide");
+}
+
+async function doCheckin(){
+  console.log("Iniciando check-in");
+
   btn.disabled = true;
   setStatus("Validando…");
 
@@ -101,13 +102,13 @@ btn.addEventListener("click", async () => {
   }
 
   if (!correo.endsWith("@usm.cl")) {
-    setStatus("Ingresa tu correo institucional @usm.cl", "crimson");
+    setStatus("Debes ingresar tu correo institucional @usm.cl", "crimson");
     btn.disabled = false;
     return;
   }
 
   if (!token) {
-    setStatus("Escanea el QR en sala (o pega el token).", "crimson");
+    setStatus("QR inválido o sesión no disponible.", "crimson");
     btn.disabled = false;
     return;
   }
@@ -117,28 +118,29 @@ btn.addEventListener("click", async () => {
     .rpc("get_sesion_por_token", { p_token: token });
 
   if (e1) {
+    console.error("Error asistencia:", e1);
     setStatus("Error: " + e1.message, "crimson");
     btn.disabled = false;
     return;
   }
 
   const sesion = (rows && rows.length) ? rows[0] : null;
+  console.log("Sesión encontrada:", sesion);
 
   if (!sesion) {
-    setStatus("Token inválido. Pide al tutor el QR vigente.", "crimson");
+    setStatus("QR inválido o sesión no disponible.", "crimson");
     btn.disabled = false;
     return;
   }
 
-  // ✅ Regla única: bloquear si la sesión está cerrada
-  if (sesion.termino_en) {
-    setStatus("Sesión cerrada. Ya no se puede registrar asistencia.", "crimson");
+  // ✅ Bloquear si está cerrada:
+  // - termino_en no es null
+  // - token_actual es null
+  if (sesion.termino_en || sesion.token_actual === null) {
+    setStatus("La mentoría ya fue finalizada. No se pueden registrar más asistencias.", "crimson");
     btn.disabled = false;
     return;
   }
-
-  // 🚫 Importante: NO validamos token_expira_en (porque tu token es fijo)
-  // if (sesion.token_expira_en && new Date() > new Date(sesion.token_expira_en)) { ... }
 
   // 2) Insert: UNIQUE (sesion_id, correo_alumno)
   const { error: e2 } = await db
@@ -150,10 +152,11 @@ btn.addEventListener("click", async () => {
     }]);
 
   if (e2) {
+    console.error("Error asistencia:", e2);
     const m = (e2.message || "").toLowerCase();
     const code = (e2.code || "");
     if (code === "23505" || m.includes("duplicate") || m.includes("unique")) {
-      setStatus("ℹ️ Este correo ya está registrado en esta sesión.", "crimson");
+      setStatus("Ya estás registrado en esta mentoría.", "crimson");
       btn.disabled = false;
       return;
     }
@@ -162,12 +165,25 @@ btn.addEventListener("click", async () => {
     return;
   }
 
-  setStatus("✅ Asistencia registrada.", "green");
+  console.log("Insert asistencia OK");
+  setStatus("Asistencia registrada correctamente.", "green");
 
-  // Celular compartido: limpiar campos para el siguiente alumno
+  // Limpiar y dejar listo para el siguiente alumno
   nombreEl.value = "";
   correoEl.value = "";
+  correoEl.focus();
+
   btn.disabled = false;
+}
+
+btn.addEventListener("click", doCheckin);
+
+// Extra: Enter en correo dispara registro (sin cambiar diseño)
+correoEl.addEventListener("keydown", (e)=>{
+  if(e.key === "Enter" && !btn.disabled){
+    e.preventDefault();
+    doCheckin();
+  }
 });
 </script>
 </body>
