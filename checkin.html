@@ -8,324 +8,68 @@
   <link rel="icon" href="data:,">
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500,650&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-
   <style>
-    :root{
-      --bg:#EAF2FB;
-      --bg2:#DDEBFA;
-      --card:#FFFFFF;
+    :root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; --muted:#6b7280; --line:#e5e7eb; }
+    body{ margin:0; font-family:Arial, sans-serif; background:var(--bg); color:#111827; }
+    .topbar{ background:var(--blue); color:#fff; padding:16px 22px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .brand{ font-weight:900; letter-spacing:.2px; }
+    a{ color:#fff; text-decoration:none; font-weight:900; }
+    .wrap{ max-width:440px; margin:22px auto; padding:0 14px; }
+    .card{ background:var(--card); border-radius:14px; box-shadow:0 8px 20px rgba(0,0,0,.08); border:1px solid var(--line); padding:18px; }
+    h1{ margin:0 0 6px; font-size:18px; }
+    .sub{ margin:0 0 14px; color:var(--muted); font-size:13px; line-height:1.35; }
+    label{ display:block; font-size:12px; color:var(--muted); margin-top:10px; }
+    input{ width:100%; padding:10px; margin-top:4px; border-radius:10px; border:1px solid #d1d5db; box-sizing:border-box; background:#fff; }
+    button{ width:100%; margin-top:14px; padding:11px; border-radius:10px; border:0; background:var(--blue); color:#fff; font-weight:900; cursor:pointer; }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
+    .msg{ margin-top:10px; font-size:13px; min-height:18px; }
+    .hint{ margin-top:12px; background:#ecfeff; border:1px solid #a5f3fc; padding:12px; border-radius:12px; font-size:12px; color:#0f172a; line-height:1.35; }
+    .hide{ display:none; }
 
-      --text:#111827;
-      --muted:#6B7280;
-      --line:rgba(17,24,39,.10);
-
-      --primary:#F06C6C;
-      --primary2:#F4A6A6;
-      --blue:#5E86C7;
-      --success:#2E9B73;
-      --danger:#E35D6A;
-
-      --radius:18px;
-      --shadow:0 18px 40px rgba(17,24,39,.10);
-    }
-
-    *{ box-sizing:border-box; }
-    body{
-      margin:0;
-      font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      color:var(--text);
-      background:
-        radial-gradient(800px 420px at 18% 8%, rgba(240,108,108,.20), transparent 60%),
-        radial-gradient(720px 420px at 92% 22%, rgba(94,134,199,.18), transparent 55%),
-        radial-gradient(860px 520px at 55% 105%, rgba(79,191,158,.14), transparent 60%),
-        var(--bg);
-    }
-
-    /* Topbar */
-    .topbar{
-      position:sticky; top:0; z-index:5;
-      background:rgba(234,242,251,.76);
-      backdrop-filter:saturate(140%) blur(10px);
-      border-bottom:1px solid var(--line);
-    }
-    .topbarInner{
-      max-width:980px;
-      margin:0 auto;
-      padding:14px 18px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-    }
-    .brand{
-      display:flex;
-      align-items:baseline;
-      gap:10px;
-      font-family:Fraunces, serif;
-      font-weight:650;
-      letter-spacing:.2px;
-    }
-    .brand small{
-      font-family:Inter, sans-serif;
-      font-weight:600;
-      color:var(--muted);
-      letter-spacing:.2px;
-    }
-    .topbar a{
-      color:var(--text);
-      text-decoration:none;
-      font-weight:600;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.7);
-    }
-    .topbar a:hover{ background:#fff; }
-
-    /* Layout */
-    .container{ max-width:980px; margin:0 auto; padding:22px 18px 40px; }
-
-    .hero{
-      display:grid;
-      grid-template-columns: 1.05fr .95fr;
-      gap:22px;
-      align-items:center;
-      margin-top:8px;
-    }
-    .heroCard{
-      background:rgba(255,255,255,.72);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      padding:22px;
-    }
-    .hTitle{
-      margin:0;
-      font-family:Fraunces, serif;
-      font-weight:650;
-      font-size:34px;
-      line-height:1.05;
-    }
-    .hSub{
-      margin:10px 0 0;
-      color:var(--muted);
-      font-size:14px;
-      line-height:1.5;
-    }
-    .badges{ margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; }
-    .badge{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:8px 10px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background:#fff;
-      font-size:12px;
-      color:var(--muted);
-    }
-    .heroArt{
-      border-radius:var(--radius);
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.55);
-      box-shadow:var(--shadow);
-      overflow:hidden;
-      padding:14px;
-    }
-    .heroArt img{
+    /* Imagen hero (mínimo, responsivo, sin alterar el estilo base) */
+    .heroImg{
       width:100%;
       height:auto;
       display:block;
-      border-radius:14px;
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:16px;
-      margin-top:18px;
-    }
-
-    .card{
-      background:rgba(255,255,255,.88);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      padding:18px;
-    }
-    h1{
-      margin:0 0 6px;
-      font-family:Fraunces, serif;
-      font-weight:650;
-      font-size:20px;
-    }
-    .sub{
-      margin:0 0 14px;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.5;
-    }
-
-    .formGrid{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:12px;
-    }
-    label{
-      display:block;
-      font-size:12px;
-      color:var(--muted);
-      margin:0 0 6px;
-    }
-    input{
-      width:100%;
-      padding:12px 12px;
-      border-radius:14px;
-      border:1px solid rgba(17,24,39,.12);
-      background:#fff;
-      outline:none;
-    }
-    input:focus{
-      border-color: rgba(240,108,108,.55);
-      box-shadow: 0 0 0 4px rgba(240,108,108,.14);
-    }
-
-    button{
-      width:100%;
-      margin-top:14px;
-      padding:12px 14px;
-      border-radius:14px;
-      border:1px solid transparent;
-      background:linear-gradient(180deg, var(--primary), #E85D62);
-      color:#fff;
-      font-weight:700;
-      cursor:pointer;
-      box-shadow: 0 12px 24px rgba(240,108,108,.18);
-    }
-    button:hover{ filter:brightness(.98); }
-    button:disabled{ opacity:.55; cursor:not-allowed; }
-
-    .msg{
-      margin-top:10px;
-      font-size:13px;
-      min-height:18px;
-    }
-
-    .hint{
-      margin-top:12px;
-      background:rgba(94,134,199,.10);
-      border:1px solid rgba(94,134,199,.22);
-      padding:12px;
-      border-radius:14px;
-      font-size:12px;
-      color:#0f172a;
-      line-height:1.45;
-    }
-
-    .statusCard{
-      margin-top:14px;
-      border-radius:14px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.92);
-      padding:12px;
-      display:flex;
-      align-items:flex-start;
-      gap:10px;
-    }
-    .statusIcon{
-      width:34px; height:34px;
       border-radius:12px;
-      display:grid;
-      place-items:center;
       border:1px solid var(--line);
+      margin:10px 0 12px;
       background:#fff;
-      flex:0 0 auto;
-      font-size:16px;
-    }
-    .statusText{
-      font-size:12px;
-      color:var(--muted);
-      line-height:1.45;
-      margin-top:2px;
-    }
-
-    .hide{ display:none; }
-
-    @media (max-width: 920px){
-      .hero{ grid-template-columns: 1fr; }
-    }
-    @media (max-width: 640px){
-      .hTitle{ font-size:30px; }
     }
   </style>
 </head>
 
 <body>
   <div class="topbar">
-    <div class="topbarInner">
-      <div class="brand">CIAC <small>· Asistencia</small></div>
-      <a href="index.html" aria-label="Volver al inicio"> Inicio</a>
-    </div>
+    <div class="brand">CIAC Check-In · Asistencia</div>
+    <a href="index.html">🏠 Inicio</a>
   </div>
 
-  <div class="container">
+  <div class="wrap">
+    <div class="card">
+      <h1>Marcar asistencia</h1>
+      <p class="sub">Escanea el QR en sala. Luego completa tus datos.</p>
 
-    <section class="hero">
-      <div class="heroCard">
-        <h2 class="hTitle">Marcar asistencia<br/>en sala</h2>
-        <p class="hSub">
-          Escanea el QR del tutor. Luego completa tus datos para registrar tu asistencia en la sesión.
-        </p>
-        <div class="badges">
-          <span class="badge"> QR en sala</span>
-          <span class="badge"> 1 registro por correo</span>
-          <span class="badge"> Rápido y simple</span>
-        </div>
+      <!-- HERO: imagen en la raíz junto a checkin.html -->
+      <img class="heroImg" src="hero-alumno.png" alt="CIAC · Check-in de asistencia" loading="lazy" />
+
+      <label>Nombre y apellido</label>
+      <input id="nombre" placeholder="Ej: Nombre Apellido" autocomplete="name" />
+
+      <label>Correo institucional</label>
+      <input id="correo" type="email" placeholder="nombre@usm.cl" autocomplete="email" inputmode="email" />
+
+      <!-- Token: se autocompleta por QR; lo dejamos por si alguien lo pega manual -->
+      <div id="tokenWrap">
+        <label>Token</label>
+        <input id="token" placeholder="(se completa automáticamente)" />
       </div>
 
-      <div class="heroArt" aria-hidden="true">
-        <!-- Por ahora reutilizamos la imagen del tutor; luego la cambiamos por una de check-in -->
-        <img src="hero-tutoria.png" alt="Ilustración educativa en estilo pastel" />
-      </div>
-    </section>
+      <button id="btn">Registrar</button>
+      <div class="msg" id="msg"></div>
 
-    <div class="grid">
-      <div class="card">
-        <h1>Registrar asistencia</h1>
-        <p class="sub">Completa tu nombre y correo institucional. El token se completa automáticamente al abrir desde el QR.</p>
-
-        <div class="formGrid">
-          <div>
-            <label>Nombre y apellido</label>
-            <input id="nombre" placeholder="Ej: Nombre Apellido" autocomplete="name" />
-          </div>
-
-          <div>
-            <label>Correo institucional</label>
-            <input id="correo" type="email" placeholder="nombre@usm.cl" autocomplete="email" inputmode="email" />
-          </div>
-
-          <!-- Token: se autocompleta por QR; lo dejamos por si alguien lo pega manual -->
-          <div id="tokenWrap">
-            <label>Token</label>
-            <input id="token" placeholder="(se completa automáticamente)" />
-          </div>
-
-          <button id="btn">Registrar</button>
-          <div class="msg" id="msg"></div>
-        </div>
-
-        <div class="statusCard">
-          <div class="statusIcon">💡</div>
-          <div>
-            <div style="font-weight:700; font-size:13px;">Tip rápido</div>
-            <div class="statusText">
-              Puedes registrar desde un celular compartido. Se permite <b>1 registro por correo</b> en cada sesión.
-            </div>
-          </div>
-        </div>
-
+      <div class="hint">
+        Puedes registrar desde un celular compartido. Se permite <b>1 registro por correo</b> en cada sesión.
       </div>
     </div>
   </div>
@@ -358,6 +102,7 @@ if (qpToken) {
 async function doCheckin(){
   console.log("Iniciando check-in");
 
+  // Evitar doble envío
   btn.disabled = true;
   setStatus("Validando…");
 
@@ -371,12 +116,14 @@ async function doCheckin(){
     return;
   }
 
+  // Validación correo @usm.cl
   if (!correo.endsWith("@usm.cl")) {
     setStatus("Debes ingresar tu correo institucional @usm.cl", "crimson");
     btn.disabled = false;
     return;
   }
 
+  // Token obligatorio (si no viene, QR inválido)
   if (!token) {
     setStatus("QR inválido o sesión no disponible.", "crimson");
     btn.disabled = false;
@@ -397,15 +144,14 @@ async function doCheckin(){
   const sesion = (rows && rows.length) ? rows[0] : null;
   console.log("Sesión encontrada:", sesion);
 
+  // QR inválido si no hay sesión
   if (!sesion) {
     setStatus("QR inválido o sesión no disponible.", "crimson");
     btn.disabled = false;
     return;
   }
 
-  // ✅ Bloquear si está cerrada:
-  // - termino_en no es null
-  // - token_actual es null
+  // Sesión cerrada si termino_en no es null o token_actual es null
   if (sesion.termino_en || sesion.token_actual === null) {
     setStatus("La mentoría ya fue finalizada. No se pueden registrar más asistencias.", "crimson");
     btn.disabled = false;
@@ -438,7 +184,7 @@ async function doCheckin(){
   console.log("Insert asistencia OK");
   setStatus("Asistencia registrada correctamente.", "green");
 
-  // Limpiar y dejar listo para el siguiente alumno
+  // Limpiar campos y foco a correo (celular compartido)
   nombreEl.value = "";
   correoEl.value = "";
   correoEl.focus();
@@ -448,7 +194,7 @@ async function doCheckin(){
 
 btn.addEventListener("click", doCheckin);
 
-// Extra: Enter en correo dispara registro (sin cambiar diseño)
+// Enter en correo registra (mejora UX sin tocar diseño)
 correoEl.addEventListener("keydown", (e)=>{
   if(e.key === "Enter" && !btn.disabled){
     e.preventDefault();
