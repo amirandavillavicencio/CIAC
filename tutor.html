@@ -155,7 +155,6 @@ body{
 .chip{
   display:inline-flex;
   align-items:center;
-  gap:8px;
   padding: 10px 12px;
   border-radius: 999px;
   background: rgba(240,108,108,0.10);
@@ -426,7 +425,7 @@ input:focus, select:focus{
           <div class="s">Tutor · Control de sesión</div>
         </div>
       </div>
-      <a href="index.html">🏠 Inicio</a>
+      <a href="index.html">Inicio</a>
     </div>
   </div>
 
@@ -436,15 +435,15 @@ input:focus, select:focus{
       <div class="heroLeft">
         <h1 class="heroTitle">
           CIAC
-          <span>Control de asistencia a mentorías</span>
+          <span>Control de asistencia a tutorías</span>
         </h1>
         <p class="heroSub">
-          Genera QR para registrar asistencia en tus mentorías y controla la sesión en tiempo real.
+          Genera QR para registrar asistencia en tus tutorías y controla la sesión en tiempo real.
         </p>
         <div class="heroChips">
-          <div class="chip">✅ QR en sala</div>
-          <div class="chip blue">⏱️ Tiempo real</div>
-          <div class="chip green">📊 Registro listo</div>
+          <div class="chip">QR en sala</div>
+          <div class="chip blue">Tiempo real</div>
+          <div class="chip green">Registro listo</div>
         </div>
       </div>
       <div class="heroRight">
@@ -459,7 +458,7 @@ input:focus, select:focus{
         <div class="cardHeader">
           <div>
             <h2 class="cardTitle">Configurar sesión</h2>
-            <p class="cardHint">Completa los datos de la mentoría y genera el QR de entrada.</p>
+            <p class="cardHint">Completa los datos de la tutoría y genera el QR de entrada.</p>
           </div>
         </div>
 
@@ -511,7 +510,7 @@ input:focus, select:focus{
 
         <div class="btnRow">
           <button id="btnGen" class="btn btnPrimary">Generar QR de entrada</button>
-          <button id="btnEnd" class="btn btnDanger" disabled>Finalizar mentoría</button>
+          <button id="btnEnd" class="btn btnDanger" disabled>Finalizar tutoría</button>
         </div>
 
         <div class="msg" id="msg"></div>
@@ -554,7 +553,6 @@ input:focus, select:focus{
           </div>
         </div>
 
-        <!-- Nota visual cuando aún no hay sesión (no tiene IDs del JS) -->
         <div class="note" id="noSessionHint">
           Aún no hay una sesión activa. Completa el formulario y presiona <b>Generar QR de entrada</b>.
         </div>
@@ -565,7 +563,7 @@ input:focus, select:focus{
         <div class="cardHeader">
           <div>
             <h2 class="cardTitle">Resumen de sesión</h2>
-            <p class="cardHint">Se completa automáticamente al finalizar la mentoría.</p>
+            <p class="cardHint">Se completa automáticamente al finalizar la tutoría.</p>
           </div>
         </div>
 
@@ -576,12 +574,14 @@ input:focus, select:focus{
             <div class="sumItem"><div class="k">Inicio</div><div class="v" id="sumInicio">--</div></div>
             <div class="sumItem"><div class="k">Término</div><div class="v" id="sumTermino">--</div></div>
             <div class="sumItem"><div class="k">Duración</div><div class="v" id="sumDuracion">--</div></div>
+
+            <!-- ✅ NUEVO (no afecta IDs existentes del JS): participantes de la sesión -->
+            <div class="sumItem"><div class="k">Participantes</div><div class="v" id="sumParticipantes">0</div></div>
           </div>
           <div class="note" style="margin-top:12px;">Esta información se usa para el reporte.</div>
         </div>
 
-        <!-- Placeholder visual cuando aún no hay resumen -->
-        <div class="note" id="noSummaryHint">Finaliza una mentoría para ver aquí el resumen.</div>
+        <div class="note" id="noSummaryHint">Finaliza una tutoría para ver aquí el resumen.</div>
       </div>
     </section>
   </main>
@@ -613,6 +613,9 @@ const sumInicio = document.getElementById("sumInicio");
 const sumTermino = document.getElementById("sumTermino");
 const sumDuracion = document.getElementById("sumDuracion");
 
+// ✅ Nuevo: participantes en resumen (NO cambia IDs existentes)
+const sumParticipantes = document.getElementById("sumParticipantes");
+
 // Inputs
 const areaEl = document.getElementById("area");
 const tutorNombreEl = document.getElementById("tutorNombre");
@@ -634,7 +637,6 @@ let liveIntervalId = null;
 function setBusy(v){
   busy = v;
   btnGen.disabled = v || false;
-  // Mantén el comportamiento original, el cierre controla btnEnd explícitamente.
   btnEnd.disabled = v || btnEnd.disabled;
 }
 function setMsg(text, color="#111827"){
@@ -706,6 +708,7 @@ function resetUIForNew(){
   inLink.href = "#";
   inTimer.textContent = "Token activo mientras la sesión esté abierta.";
   liveCountEl.textContent = "0";
+  if (sumParticipantes) sumParticipantes.textContent = "0";
 }
 
 function stopLiveCount(){
@@ -725,7 +728,6 @@ async function refreshLiveCount(){
       .eq("sesion_id", sessionId);
 
     if (error) {
-      // No ensuciar la UI con error; solo log
       console.error("[CIAC] LiveCount ERROR", error);
       return;
     }
@@ -737,7 +739,6 @@ async function refreshLiveCount(){
 
 function startLiveCount(){
   stopLiveCount();
-  // actualiza de inmediato y luego cada 5s
   refreshLiveCount();
   liveIntervalId = setInterval(refreshLiveCount, 5000);
 }
@@ -793,6 +794,13 @@ function showSummary(area, tutorNombre, startIso, endIso){
   sumInicio.textContent = fmtLocal(startIso);
   sumTermino.textContent = fmtLocal(endIso);
   sumDuracion.textContent = durationText(startIso, endIso);
+
+  // ✅ participantes: usa el contador en vivo actual (sin nuevas llamadas)
+  if (sumParticipantes) {
+    const n = parseInt(liveCountEl?.textContent || "0", 10);
+    sumParticipantes.textContent = String(isNaN(n) ? 0 : n);
+  }
+
   summaryBox.style.display = "block";
 }
 
@@ -801,13 +809,13 @@ function showSummary(area, tutorNombre, startIso, endIso){
  */
 async function endMentoria(){
   if (!sessionId) {
-    setMsg("No hay una mentoría activa para finalizar.", "crimson");
+    setMsg("No hay una tutoría activa para finalizar.", "crimson");
     return;
   }
   if (busy) return;
 
   const sesion_id = sessionId;
-  console.log("[CIAC] Finalizando mentoría", { sesion_id });
+  console.log("[CIAC] Finalizando tutoría", { sesion_id });
 
   btnEnd.disabled = true;
   setBusy(true);
@@ -827,7 +835,7 @@ async function endMentoria(){
 
     if (error) {
       console.error("[CIAC] Update ERROR", error);
-      setMsg("No se pudo finalizar la mentoría. Reintenta.", "crimson");
+      setMsg("No se pudo finalizar la tutoría. Reintenta.", "crimson");
       btnEnd.disabled = false;
       return;
     }
@@ -858,7 +866,7 @@ async function endMentoria(){
 
     clearActiveFromLS();
 
-    setMsg("✅ Mentoría finalizada. QR deshabilitado.", "green");
+    setMsg("✅ Tutoría finalizada. QR deshabilitado.", "green");
 
     // UI cerrada
     inbox.style.display = "none";
@@ -872,7 +880,7 @@ async function endMentoria(){
 
   } catch (err) {
     console.error("[CIAC] Update ERROR", err);
-    setMsg("No se pudo finalizar la mentoría. Reintenta.", "crimson");
+    setMsg("No se pudo finalizar la tutoría. Reintenta.", "crimson");
     btnEnd.disabled = false;
   } finally {
     setBusy(false);
@@ -1068,7 +1076,7 @@ btnGen.addEventListener("click", async () => {
 });
 
 btnEnd.addEventListener("click", async () => {
-  const ok = confirm("¿Finalizar mentoría? Esto registrará la hora de término e invalidará el QR.");
+  const ok = confirm("¿Finalizar tutoría? Esto registrará la hora de término e invalidará el QR.");
   if (ok) await endMentoria();
 });
 
