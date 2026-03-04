@@ -3,1088 +3,1265 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CIAC · Tutor</title>
-
-<!-- Google Fonts -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
+<title>CIAC Check-In · Reporte</title>
+<link rel="icon" href="data:,">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
 <style>
-:root{
-  --bg:#EAF2FB;
-  --card:#FFFFFF;
-  --primary:#F06C6C;
-  --primarySoft:#F4A6A6;
-  --blue:#5E86C7;
-  --success:#4FBF9E;
-  --text:#111827;
-  --muted:#6B7280;
-  --line: rgba(17,24,39,0.10);
-  --shadow: 0 18px 40px rgba(17,24,39,0.10);
-  --radius: 18px;
-}
+:root{--blue:#1f4a8d;--bg:#f4f6f8;--card:#fff;--muted:#6b7280;--line:#e5e7eb;--good:#166534;--warn:#b45309}
+html,body{height:100%}
+body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#111827;overflow-x:hidden}
+.topbar{background:var(--blue);color:#fff;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-weight:900;letter-spacing:.2px}
+a{color:#fff;text-decoration:none;font-weight:900}
 
-*{ box-sizing:border-box; }
-body{
-  margin:0;
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background: radial-gradient(1200px 600px at 10% 0%, rgba(94,134,199,0.18), rgba(234,242,251,0) 60%),
-              radial-gradient(900px 500px at 90% 10%, rgba(240,108,108,0.18), rgba(234,242,251,0) 55%),
-              var(--bg);
-  color:var(--text);
-}
+.wrap{width:95%;margin:22px auto}
+.card{width:100%;background:#fff;border-radius:14px;box-shadow:0 8px 20px rgba(0,0,0,.08);border:1px solid var(--line);padding:18px;box-sizing:border-box}
+h1{margin:0 0 6px;font-size:20px}
+.sub{margin:0 0 10px;color:var(--muted);font-size:12px;line-height:1.35}
+.muted{color:var(--muted);font-size:12px}
 
-.topbar{
-  position:sticky;
-  top:0;
-  z-index:10;
-  background: rgba(255,255,255,0.72);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(17,24,39,0.06);
-}
+.grid{display:grid;grid-template-columns:380px 1fr;gap:20px;align-items:start}
 
-.topbarInner{
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 14px 16px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-}
+.filters{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff;box-sizing:border-box}
+.filters .row{display:flex;gap:10px;flex-wrap:wrap}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+input,select{padding:10px;border:1px solid #d1d5db;border-radius:10px;width:100%;box-sizing:border-box;background:#fff}
+.small{width:160px}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.btn{padding:10px 12px;border:0;border-radius:10px;cursor:pointer;font-weight:900;background:var(--blue);color:#fff}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btnGhost{background:#eef2ff;color:#111827;border:1px solid #c7d2fe}
+.btnGood{background:#16a34a;color:#fff}
+.pill{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid var(--line);background:#f9fafb}
 
-.brand{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  font-weight:800;
-  letter-spacing: .2px;
-}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.kpi{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}
+.kpi .k{font-size:11px;color:var(--muted)}
+.kpi .v{font-size:18px;font-weight:900;margin-top:4px}
+.kpi .s{font-size:11px;color:var(--muted);margin-top:4px}
 
-.brandMark{
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(94,134,199,0.95), rgba(240,108,108,0.95));
-  box-shadow: 0 10px 24px rgba(17,24,39,0.12);
-}
+.tableWrap{margin-top:12px;border:1px solid var(--line);border-radius:14px;background:#fff;width:100%}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:#111827;background:#fafafa;position:sticky;top:0;z-index:1}
+td .muted{font-size:11px}
+.right{text-align:right}
+.footer{text-align:center;color:var(--muted);font-size:12px;margin:14px 0 30px}
 
-.brandText{
-  display:flex;
-  flex-direction:column;
-  line-height:1.05;
-}
-.brandText .t{
-  font-family: Fraunces, serif;
-  font-size: 16px;
-}
-.brandText .s{
-  font-size: 12px;
-  color: var(--muted);
-  font-weight:600;
-}
+.badgeOk{color:var(--good);font-weight:900}
+.badgeWarn{color:var(--warn);font-weight:900}
 
-.topbar a{
-  text-decoration:none;
-  font-weight:800;
-  color: var(--text);
-  background: rgba(94,134,199,0.10);
-  border: 1px solid rgba(94,134,199,0.18);
-  padding: 10px 12px;
-  border-radius: 14px;
-}
-.topbar a:hover{
-  background: rgba(94,134,199,0.14);
-}
+.detail{margin-top:12px;border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px}
+.detailTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.detailTitle{font-weight:900;font-size:14px;margin:0}
+.detailMeta{margin-top:6px;color:var(--muted);font-size:12px;line-height:1.35}
+.detailActions{display:flex;gap:10px;flex-wrap:wrap}
+.detailTableWrap{margin-top:12px;border:1px solid var(--line);border-radius:14px;overflow:auto;background:#fff}
+.detailTable{width:100%;border-collapse:collapse;min-width:720px}
 
-.page{
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 18px 16px 32px;
-}
+.analytics{margin-top:12px;border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px}
+.analyticsHead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.analyticsTitle{font-weight:900;font-size:14px;margin:0}
+.analyticsHint{color:var(--muted);font-size:12px;margin:0}
+.analyticsGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.analyticsCard{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}
+.analyticsCard h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+.canvasWrap{display:flex;gap:12px;align-items:flex-start}
+.canvasBox{border:1px solid var(--line);border-radius:14px;padding:10px;background:#fff}
+.canvasBox canvas{display:block}
+.legend{font-size:12px;color:#111827}
+.legend .muted{font-size:11px}
+.legendRow{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--line);padding:6px 0}
+.legendRow:last-child{border-bottom:0}
+.legendLeft{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.legendRight{color:var(--muted);white-space:nowrap}
+.analyticsFull{grid-column:1 / -1}
 
-.hero{
-  margin-top: 6px;
-  background: rgba(255,255,255,0.55);
-  border: 1px solid rgba(17,24,39,0.06);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 18px;
-  display:grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 18px;
-  overflow:hidden;
-}
+.heatWrap{overflow:auto;border:1px solid var(--line);border-radius:14px}
+.heat{border-collapse:collapse;min-width:900px;width:100%}
+.heat th,.heat td{border-bottom:1px solid var(--line);padding:8px;font-size:12px;text-align:center}
+.heat th{background:#fafafa;position:sticky;top:0}
+.heat .rowHead{background:#fafafa;text-align:left;font-weight:900;position:sticky;left:0;z-index:1}
+.h0{background:#fff}
+.h1{background:#e8f0ff}
+.h2{background:#cfe0ff}
+.h3{background:#9fbfff}
+.heatNote{margin-top:10px;color:var(--muted);font-size:12px}
 
-.heroLeft{
-  padding: 6px 6px 10px;
-}
-
-.heroTitle{
-  font-family: Fraunces, serif;
-  font-weight: 800;
-  font-size: 34px;
-  line-height: 1.05;
-  margin: 0 0 10px;
-  letter-spacing: .2px;
-}
-.heroTitle span{
-  display:block;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--blue);
-  margin-top: 6px;
-}
-
-.heroSub{
-  margin: 0 0 14px;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.45;
-  max-width: 56ch;
-}
-
-.heroChips{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-}
-.chip{
-  display:inline-flex;
-  align-items:center;
-  padding: 10px 12px;
-  border-radius: 999px;
-  background: rgba(240,108,108,0.10);
-  border: 1px solid rgba(240,108,108,0.18);
-  color: var(--text);
-  font-weight: 700;
-  font-size: 12px;
-}
-.chip.blue{
-  background: rgba(94,134,199,0.10);
-  border-color: rgba(94,134,199,0.18);
-}
-.chip.green{
-  background: rgba(79,191,158,0.10);
-  border-color: rgba(79,191,158,0.18);
-}
-
-.heroRight{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding: 6px;
-}
-.heroRight img{
-  max-width: 100%;
-  height: auto;
-  border-radius: 16px;
-  border: 1px solid rgba(17,24,39,0.06);
-  box-shadow: 0 16px 34px rgba(17,24,39,0.10);
-  background:#fff;
-}
-
-.grid{
-  margin-top: 16px;
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.card{
-  background: var(--card);
-  border: 1px solid rgba(17,24,39,0.06);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 16px;
-}
-
-.cardHeader{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-.cardTitle{
-  margin:0;
-  font-family: Fraunces, serif;
-  font-size: 18px;
-  letter-spacing:.2px;
-}
-.cardHint{
-  margin: 6px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.fieldRow{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-label{
-  display:block;
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 10px;
-  font-weight: 700;
-}
-
-input, select{
-  width:100%;
-  margin-top: 6px;
-  padding: 12px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(17,24,39,0.10);
-  background: rgba(234,242,251,0.35);
-  color: var(--text);
-  outline: none;
-}
-input:focus, select:focus{
-  border-color: rgba(94,134,199,0.55);
-  box-shadow: 0 0 0 4px rgba(94,134,199,0.14);
-  background: #fff;
-}
-
-.btnRow{
-  display:flex;
-  gap: 10px;
-  margin-top: 14px;
-  flex-wrap: wrap;
-}
-
-.btn{
-  flex: 1 1 220px;
-  padding: 12px 12px;
-  border: 0;
-  border-radius: 14px;
-  font-weight: 900;
-  cursor: pointer;
-  font-family: Inter, sans-serif;
-  letter-spacing: .2px;
-}
-.btnPrimary{
-  background: linear-gradient(135deg, var(--primary), var(--primarySoft));
-  color: #fff;
-  box-shadow: 0 14px 30px rgba(240,108,108,0.22);
-}
-.btnDanger{
-  background: linear-gradient(135deg, rgba(17,24,39,0.92), rgba(17,24,39,0.78));
-  color: #fff;
-  box-shadow: 0 14px 30px rgba(17,24,39,0.14);
-}
-.btn:disabled{
-  opacity: .55;
-  cursor: not-allowed;
-  box-shadow:none;
-}
-
-.msg{
-  margin-top: 12px;
-  font-size: 13px;
-  min-height: 18px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(234,242,251,0.35);
-  border: 1px dashed rgba(17,24,39,0.10);
-}
-
-.qrWrap{
-  display:none; /* JS la controla con inbox.style.display */
-}
-
-.qrRow{
-  display:flex;
-  gap: 14px;
-  align-items:center;
-  flex-wrap:wrap;
-  margin-top: 6px;
-}
-
-.qrRow img{
-  width: 190px;
-  height: 190px;
-  border-radius: 16px;
-  border: 1px solid rgba(17,24,39,0.08);
-  padding: 10px;
-  background:#fff;
-}
-
-.kv{
-  font-size: 12px;
-  color: var(--muted);
-  font-weight: 700;
-}
-.code{
-  font-size: 22px;
-  font-weight: 900;
-  letter-spacing: .6px;
-  margin: 6px 0 0;
-  word-break: break-all;
-  font-family: Inter, sans-serif;
-}
-
-.smalllink{
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--muted);
-  word-break: break-all;
-}
-.smalllink a{
-  color: var(--blue);
-  text-decoration: underline;
-  font-weight: 800;
-}
-
-.timer{
-  margin-top: 12px;
-  font-size: 12px;
-  color: var(--text);
-  background: rgba(94,134,199,0.10);
-  border: 1px solid rgba(94,134,199,0.18);
-  padding: 10px 12px;
-  border-radius: 14px;
-}
-
-.note{
-  margin-top: 10px;
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.35;
-}
-
-.liveLine{
-  margin-top: 10px;
-  display:flex;
-  align-items:center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.badge{
-  display:inline-flex;
-  align-items:center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 999px;
-  background: rgba(79,191,158,0.10);
-  border: 1px solid rgba(79,191,158,0.18);
-  color: var(--text);
-  font-weight: 900;
-}
-.badge b{
-  color: var(--success);
-}
-
-.summary{
-  display:none; /* JS la controla con summaryBox.style.display */
-}
-
-.summaryLines{
-  margin-top: 10px;
-  display:grid;
-  gap: 8px;
-}
-
-.sumItem{
-  display:flex;
-  justify-content:space-between;
-  gap: 14px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(17,24,39,0.06);
-  background: rgba(234,242,251,0.35);
-  font-size: 12px;
-}
-.sumItem .k{ color: var(--muted); font-weight: 800; }
-.sumItem .v{ color: var(--text); font-weight: 800; text-align:right; }
-
-@media (max-width: 900px){
-  .hero{ grid-template-columns: 1fr; }
-  .heroRight{ justify-content:flex-start; }
-  .grid{ grid-template-columns: 1fr; }
-  .fieldRow{ grid-template-columns: 1fr; }
-  .btn{ flex: 1 1 100%; }
-}
+.lock{position:fixed;inset:0;background:rgba(17,24,39,.55);display:flex;align-items:center;justify-content:center}
+.lockCard{width:420px;background:#fff;border-radius:14px;padding:20px;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+.lockTitle{font-weight:900;font-size:16px;margin-bottom:10px}
+.lockRow{display:flex;gap:10px}
+.lockMsg{margin-top:10px;font-size:12px;min-height:16px}
 </style>
 </head>
 
 <body>
-  <div class="topbar">
-    <div class="topbarInner">
-      <div class="brand">
-        <div class="brandMark" aria-hidden="true"></div>
-        <div class="brandText">
-          <div class="t">CIAC</div>
-          <div class="s">Tutor · Control de sesión</div>
-        </div>
-      </div>
-      <a href="index.html">Inicio</a>
-    </div>
-  </div>
+<div class="topbar">
+  <div class="brand">CIAC Check-In · Reporte</div>
+  <a href="index.html">Inicio</a>
+</div>
 
-  <main class="page">
-    <!-- HERO -->
-    <section class="hero">
-      <div class="heroLeft">
-        <h1 class="heroTitle">
-          CIAC
-          <span>Control de asistencia a tutorías</span>
-        </h1>
-        <p class="heroSub">
-          Genera QR para registrar asistencia en tus tutorías y controla la sesión en tiempo real.
-        </p>
-        <div class="heroChips">
-          <div class="chip">QR en sala</div>
-          <div class="chip blue">Tiempo real</div>
-          <div class="chip green">Registro listo</div>
-        </div>
-      </div>
-      <div class="heroRight">
-        <img src="hero-tutoria.png" alt="Ilustración educativa de tutoría" />
-      </div>
-    </section>
+<div class="wrap">
+  <div class="card" id="app" style="display:none;">
+    <h1>Reporte de Mentorías</h1>
+    <div class="sub" id="metaLine">Cargando…</div>
 
-    <!-- CARDS -->
-    <section class="grid">
-      <!-- CARD FORM -->
-      <div class="card">
-        <div class="cardHeader">
-          <div>
-            <h2 class="cardTitle">Configurar sesión</h2>
-            <p class="cardHint">Completa los datos de la tutoría y genera el QR de entrada.</p>
-          </div>
+    <div class="grid">
+      <div class="filters">
+        <div class="pill" id="genAt">Generado: --</div>
+
+        <label>Fecha rápida</label>
+        <select id="quickDate">
+          <option value="rango">Rango</option>
+          <option value="hoy">Hoy</option>
+          <option value="semana">Esta semana</option>
+        </select>
+
+        <label>Rango de fechas</label>
+        <div class="row">
+          <input id="desde" class="small" type="date">
+          <input id="hasta" class="small" type="date">
         </div>
 
-        <div class="fieldRow">
-          <div>
-            <label for="campus">Campus</label>
-            <select id="campus">
-              <option>Casa Central</option>
-              <option>San Joaquín</option>
-              <option selected>Vitacura</option>
-            </select>
-          </div>
+        <label>Campus</label>
+        <select id="selCampus">
+          <option value="">Todos</option>
+        </select>
 
-          <div>
-            <label for="sala">Sala</label>
-            <input id="sala" placeholder="Ej: CIAC-1" value="ciac" />
-          </div>
+        <label>Área / Tipo</label>
+        <select id="selArea">
+          <option value="">Todas</option>
+        </select>
+
+        <label>Tutor</label>
+        <select id="selTutor">
+          <option value="">Todos</option>
+        </select>
+
+        <label>Estado</label>
+        <select id="selEstado">
+          <option value="">Todas</option>
+          <option value="activa">Activas</option>
+          <option value="cerrada">Cerradas</option>
+        </select>
+
+        <label>Búsqueda (sala/campus/correo/código)</label>
+        <input id="q" placeholder="Ej: vitacura / ciac / @usm.cl / 123456" />
+
+        <div class="btnrow">
+          <button class="btn" id="btnFiltrar">Aplicar</button>
+          <button class="btn btnGhost" id="btnLimpiar">Limpiar</button>
+          <button class="btn btnGood" id="btnCSV">Descargar CSV</button>
         </div>
 
-        <div class="fieldRow">
-          <div>
-            <label for="area">Área (tutoría)</label>
-            <select id="area">
-              <option value="" selected>Selecciona…</option>
-              <option value="Matemática">Matemática</option>
-              <option value="Física">Física</option>
-              <option value="Química">Química</option>
-              <option value="Programación">Programación</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="horaInicio">Hora inicio</label>
-            <select id="horaInicio"></select>
-          </div>
-        </div>
-
-        <div class="fieldRow">
-          <div>
-            <label for="tutorNombre">Nombre tutor</label>
-            <input id="tutorNombre" placeholder="Ej: Nombre Apellido" autocomplete="name" />
-          </div>
-
-          <div>
-            <label for="tutor">Correo tutor</label>
-            <input id="tutor" type="email" placeholder="tutor@usm.cl" value="andres.mirandav@usm.cl" />
-          </div>
-        </div>
-
-        <div class="btnRow">
-          <button id="btnGen" class="btn btnPrimary">Generar QR de entrada</button>
-          <button id="btnEnd" class="btn btnDanger" disabled>Finalizar tutoría</button>
-        </div>
-
-        <div class="msg" id="msg"></div>
+        <div class="muted" style="margin-top:10px;" id="status">—</div>
       </div>
 
-      <!-- CARD QR ACTIVA -->
-      <div class="card">
-        <div class="cardHeader">
-          <div>
-            <h2 class="cardTitle">Sesión activa</h2>
-            <p class="cardHint">Muestra el QR al curso y monitorea asistencias registradas.</p>
+      <div>
+        <div class="kpis">
+          <div class="kpi">
+            <div class="k">Total sesiones</div>
+            <div class="v" id="kSes">0</div>
+            <div class="s">en el período</div>
+          </div>
+          <div class="kpi">
+            <div class="k">Total horas</div>
+            <div class="v" id="kHoras">0</div>
+            <div class="s">duración acumulada</div>
+          </div>
+          <div class="kpi">
+            <div class="k">Promedio duración</div>
+            <div class="v" id="kProm">0</div>
+            <div class="s">por sesión</div>
+          </div>
+          <div class="kpi">
+            <div class="k">Ayudantes activos</div>
+            <div class="v" id="kTut">0</div>
+            <div class="s">con sesiones</div>
           </div>
         </div>
 
-        <!-- IMPORTANTE: mantener IDs usados por JS -->
-        <div class="qrWrap" id="inbox">
-          <div class="kv">Entrada (token fijo)</div>
-
-          <div class="qrRow">
-            <img id="qrIn" width="190" height="190" alt="QR entrada" />
+        <div class="analytics" id="analyticsWrap">
+          <div class="analyticsHead">
             <div>
-              <div class="kv">Token entrada</div>
-              <div class="code" id="inToken">------</div>
+              <div class="analyticsTitle">Analítica rápida</div>
+              <p class="analyticsHint">Basado en los resultados filtrados actuales.</p>
+            </div>
+            <div class="muted" id="analyticsMsg"></div>
+          </div>
 
-              <div class="smalllink">
-                Link:
-                <a id="inLink" href="#" target="_blank" rel="noopener">—</a>
+          <div class="analyticsGrid">
+            <div class="analyticsCard">
+              <h3>Uso por categoría</h3>
+              <div class="canvasWrap">
+                <div class="canvasBox">
+                  <canvas id="chartTipo" width="260" height="180"></canvas>
+                </div>
+                <div class="legend" id="legendTipo"></div>
               </div>
+              <div class="muted" id="noTipo" style="margin-top:8px;display:none;">No hay datos para graficar.</div>
+            </div>
 
-              <div class="liveLine">
-                <span class="badge">Asistencias: <b id="liveCount">0</b></span>
+            <div class="analyticsCard">
+              <h3>Carga por tutor</h3>
+              <div class="canvasWrap">
+                <div class="canvasBox">
+                  <canvas id="chartTutor" width="420" height="180"></canvas>
+                </div>
+                <div class="legend" id="legendTutor"></div>
               </div>
+              <div class="muted" id="noTutor" style="margin-top:8px;display:none;">No hay datos para graficar.</div>
+            </div>
+
+            <div class="analyticsCard analyticsFull">
+              <h3>Ocupación por día y bloque</h3>
+              <div class="heatWrap" id="heatmapOcupacion"></div>
+              <div class="heatNote" id="heatNote" style="display:none;"></div>
+              <div class="muted" id="noHeat" style="margin-top:8px;display:none;">No hay datos para graficar.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha/Hora</th>
+                <th>Campus</th>
+                <th>Sala</th>
+                <th>Área</th>
+                <th>Bloque</th>
+                <th>Tutor</th>
+                <th>Estado</th>
+                <th class="right">Participantes</th>
+                <th class="right">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+
+        <div class="detail" id="detailWrap" style="display:none;">
+          <div class="detailTop">
+            <div>
+              <div class="detailTitle" id="detailTitle">Detalle de sesión</div>
+              <div class="detailMeta" id="detailMeta">—</div>
+              <div class="detailMeta" id="detailCount">Participantes: 0</div>
+            </div>
+            <div class="detailActions">
+              <button class="btn btnGood" id="btnCSVSession">Descargar CSV sesión</button>
+              <button class="btn btnGhost" id="btnCloseDetail">Cerrar</button>
             </div>
           </div>
 
-          <div class="timer" id="inTimer">Token activo mientras la sesión esté abierta.</div>
-
-          <div class="note">
-            Recomendación: no reenviar el link fuera de la sala. Mientras la sesión esté abierta, el QR seguirá funcionando.
+          <div class="detailTableWrap">
+            <table class="detailTable">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Correo</th>
+                  <th>Hora</th>
+                </tr>
+              </thead>
+              <tbody id="detailRows"></tbody>
+            </table>
           </div>
+
+          <div class="muted" style="margin-top:10px;" id="detailMsg"></div>
         </div>
 
-        <div class="note" id="noSessionHint">
-          Aún no hay una sesión activa. Completa el formulario y presiona <b>Generar QR de entrada</b>.
-        </div>
+        <div class="footer">© Universidad Técnica Federico Santa María · CIAC</div>
       </div>
+    </div>
+  </div>
+</div>
 
-      <!-- CARD RESUMEN -->
-      <div class="card" style="grid-column: 1 / -1;">
-        <div class="cardHeader">
-          <div>
-            <h2 class="cardTitle">Resumen de sesión</h2>
-            <p class="cardHint">Se completa automáticamente al finalizar la tutoría.</p>
-          </div>
-        </div>
-
-        <div class="summary" id="summary">
-          <div class="summaryLines">
-            <div class="sumItem"><div class="k">Área</div><div class="v" id="sumArea">--</div></div>
-            <div class="sumItem"><div class="k">Tutor</div><div class="v" id="sumTutor">--</div></div>
-            <div class="sumItem"><div class="k">Inicio</div><div class="v" id="sumInicio">--</div></div>
-            <div class="sumItem"><div class="k">Término</div><div class="v" id="sumTermino">--</div></div>
-            <div class="sumItem"><div class="k">Duración</div><div class="v" id="sumDuracion">--</div></div>
-
-            <!-- ✅ NUEVO (no afecta IDs existentes del JS): participantes de la sesión -->
-            <div class="sumItem"><div class="k">Participantes</div><div class="v" id="sumParticipantes">0</div></div>
-          </div>
-          <div class="note" style="margin-top:12px;">Esta información se usa para el reporte.</div>
-        </div>
-
-        <div class="note" id="noSummaryHint">Finaliza una tutoría para ver aquí el resumen.</div>
-      </div>
-    </section>
-  </main>
+<div class="lock" id="lock">
+  <div class="lockCard">
+    <div class="lockTitle">Acceso restringido</div>
+    <div class="lockRow">
+      <input id="pass" type="password" placeholder="Clave del reporte" />
+      <button class="btn" id="btnEnter">Entrar</button>
+    </div>
+    <div class="lockMsg" id="lockMsg"></div>
+  </div>
+</div>
 
 <script>
-const AUTO_CLOSE_HOURS = 3; // expira_en NOT NULL
+const REPORT_PASSWORD="CIAC#R3p0rt3_2026!VtC-9qLx";
+const SUPABASE_URL="https://eepukfxexzawbvlroihd.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
-const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const lock=document.getElementById("lock");
+const app=document.getElementById("app");
+const lockMsg=document.getElementById("lockMsg");
+const passEl=document.getElementById("pass");
 
-// UI
-const msg = document.getElementById("msg");
-const btnGen = document.getElementById("btnGen");
-const btnEnd = document.getElementById("btnEnd");
+const metaLine=document.getElementById("metaLine");
+const statusEl=document.getElementById("status");
+const genAtEl=document.getElementById("genAt");
 
-const inbox = document.getElementById("inbox");
-const qrIn = document.getElementById("qrIn");
-const inToken = document.getElementById("inToken");
-const inLink = document.getElementById("inLink");
-const inTimer = document.getElementById("inTimer");
-const liveCountEl = document.getElementById("liveCount");
+const quickDateEl=document.getElementById("quickDate");
+const desdeEl=document.getElementById("desde");
+const hastaEl=document.getElementById("hasta");
+const selCampusEl=document.getElementById("selCampus");
+const selTutorEl=document.getElementById("selTutor");
+const selAreaEl=document.getElementById("selArea");
+const selEstadoEl=document.getElementById("selEstado");
+const qEl=document.getElementById("q");
 
-// Resumen
-const summaryBox = document.getElementById("summary");
-const sumArea = document.getElementById("sumArea");
-const sumTutor = document.getElementById("sumTutor");
-const sumInicio = document.getElementById("sumInicio");
-const sumTermino = document.getElementById("sumTermino");
-const sumDuracion = document.getElementById("sumDuracion");
+const rowsEl=document.getElementById("rows");
+const kSes=document.getElementById("kSes");
+const kHoras=document.getElementById("kHoras");
+const kProm=document.getElementById("kProm");
+const kTut=document.getElementById("kTut");
 
-// ✅ Nuevo: participantes en resumen (NO cambia IDs existentes)
-const sumParticipantes = document.getElementById("sumParticipantes");
+const btnFiltrar=document.getElementById("btnFiltrar");
+const btnLimpiar=document.getElementById("btnLimpiar");
+const btnCSV=document.getElementById("btnCSV");
 
-// Inputs
-const areaEl = document.getElementById("area");
-const tutorNombreEl = document.getElementById("tutorNombre");
-const horaInicioEl = document.getElementById("horaInicio");
+const detailWrap=document.getElementById("detailWrap");
+const detailTitle=document.getElementById("detailTitle");
+const detailMeta=document.getElementById("detailMeta");
+const detailCount=document.getElementById("detailCount");
+const detailRows=document.getElementById("detailRows");
+const detailMsg=document.getElementById("detailMsg");
+const btnCloseDetail=document.getElementById("btnCloseDetail");
+const btnCSVSession=document.getElementById("btnCSVSession");
 
-// State
-const LS_KEY = "ciac_tutor_active_session";
-const LS_LAST_CLOSED = "ciac_tutor_last_closed";
-const LS_TUTOR_PROFILE = "ciac_tutor_profile";
+const analyticsMsg=document.getElementById("analyticsMsg");
+const chartTipo=document.getElementById("chartTipo");
+const chartTutor=document.getElementById("chartTutor");
+const legendTipo=document.getElementById("legendTipo");
+const legendTutor=document.getElementById("legendTutor");
+const heatmapOcupacion=document.getElementById("heatmapOcupacion");
+const heatNote=document.getElementById("heatNote");
+const noTipo=document.getElementById("noTipo");
+const noTutor=document.getElementById("noTutor");
+const noHeat=document.getElementById("noHeat");
 
-let sessionId = null;
-let closed = false;
-let busy = false;
-let sessionCreatedAtIso = null;
+let LAST_ROWS=[];
+let LAST_SESIONES_RAW=[];
+let COUNTS_BY_ID=new Map();
+let OPEN_DETAIL_SESSION=null;
+let LAST_PARTICIPANTES=[];
 
-// ✅ polling asistencias
-let liveIntervalId = null;
-
-function setBusy(v){
-  busy = v;
-  btnGen.disabled = v || false;
-  btnEnd.disabled = v || btnEnd.disabled;
-}
-function setMsg(text, color="#111827"){
-  msg.style.color = color;
-  msg.textContent = text;
-}
-
-function rand10(){
-  const r = (crypto?.randomUUID ? crypto.randomUUID().replace(/-/g,'') : (Date.now()+''+Math.random()).replace('.',''));
-  return r.slice(0, 10);
-}
-function qrUrl(url, size=190){
-  return "https://api.qrserver.com/v1/create-qr-code/?size="+size+"x"+size+"&data=" + encodeURIComponent(url);
-}
-function renderIn(url){
-  qrIn.src = qrUrl(url, 190);
-  inLink.href = url;
-  inLink.textContent = url;
+function unlock(){
+  lock.style.display="none";
+  app.style.display="block";
+  initDefaults();
+  boot();
 }
 
-function saveActiveToLS(payload){
-  localStorage.setItem(LS_KEY, JSON.stringify(payload));
-}
-function clearActiveFromLS(){
-  localStorage.removeItem(LS_KEY);
-}
-function readActiveFromLS(){
-  try{
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  }catch{
-    return null;
+if(localStorage.getItem("ciac_report_ok")==="1") unlock();
+
+document.getElementById("btnEnter").onclick=()=>{
+  if(passEl.value===REPORT_PASSWORD){
+    localStorage.setItem("ciac_report_ok","1");
+    unlock();
+  }else{
+    lockMsg.style.color="crimson";
+    lockMsg.innerText="Clave incorrecta.";
   }
-}
-function saveLastClosedToLS(payload){
-  localStorage.setItem(LS_LAST_CLOSED, JSON.stringify(payload));
+};
+
+passEl.addEventListener("keydown",(e)=>{
+  if(e.key==="Enter") document.getElementById("btnEnter").click();
+});
+
+function setStatus(t, isErr=false){
+  statusEl.style.color=isErr ? "crimson" : "";
+  statusEl.textContent=t;
 }
 
-function saveTutorProfile(){
-  const profile = {
-    tutor_nombre: (tutorNombreEl.value || "").trim(),
-    area: areaEl.value || ""
-  };
-  localStorage.setItem(LS_TUTOR_PROFILE, JSON.stringify(profile));
-}
-function loadTutorProfile(){
-  try{
-    const raw = localStorage.getItem(LS_TUTOR_PROFILE);
-    if (!raw) return;
-    const p = JSON.parse(raw);
-    if (p?.tutor_nombre && !tutorNombreEl.value) tutorNombreEl.value = p.tutor_nombre;
-    if (p?.area && !areaEl.value) areaEl.value = p.area;
-  }catch{}
+function fmtDT(iso){
+  if(!iso) return "—";
+  const d=new Date(iso);
+  if(isNaN(d.getTime())) return iso;
+  return d.toLocaleString("es-CL",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});
 }
 
-function setUIForActive(){
-  inbox.style.display = "block";
-  btnEnd.disabled = false;
-  summaryBox.style.display = "none";
+function minutesBetween(aIso,bIso){
+  const a=Date.parse(aIso||"");
+  const b=Date.parse(bIso||"");
+  if(!a||!b||isNaN(a)||isNaN(b)||b<a) return null;
+  return Math.round((b-a)/60000);
 }
 
-function resetUIForNew(){
-  inbox.style.display = "none";
-  summaryBox.style.display = "none";
-  btnEnd.disabled = true;
-  inToken.textContent = "------";
-  inLink.textContent = "—";
-  inLink.href = "#";
-  inTimer.textContent = "Token activo mientras la sesión esté abierta.";
-  liveCountEl.textContent = "0";
-  if (sumParticipantes) sumParticipantes.textContent = "0";
+function durationHuman(mins){
+  if(mins===null||mins===undefined) return "—";
+  const h=Math.floor(mins/60);
+  const m=mins%60;
+  if(h<=0) return `${m} min`;
+  return `${h} h ${m} min`;
 }
 
-function stopLiveCount(){
-  if (liveIntervalId) {
-    clearInterval(liveIntervalId);
-    liveIntervalId = null;
+function toISODateStart(dateStr){
+  if(!dateStr) return null;
+  return new Date(dateStr+"T00:00:00").toISOString();
+}
+function toISODateEnd(dateStr){
+  if(!dateStr) return null;
+  return new Date(dateStr+"T23:59:59").toISOString();
+}
+
+function isoToday(){
+  const d=new Date();
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,"0");
+  const da=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${da}`;
+}
+
+function setTodayRange(){
+  const t=isoToday();
+  desdeEl.value=t;
+  hastaEl.value=t;
+}
+
+function setWeekRange(){
+  const now=new Date();
+  const day=(now.getDay()+6)%7;
+  const mon=new Date(now);
+  mon.setDate(now.getDate()-day);
+  const sun=new Date(mon);
+  sun.setDate(mon.getDate()+6);
+
+  const fmt=(d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  desdeEl.value=fmt(mon);
+  hastaEl.value=fmt(sun);
+}
+
+function initDefaults(){
+  const now=new Date();
+  genAtEl.textContent="Generado: "+now.toLocaleString("es-CL",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+  const first=new Date(now.getFullYear(),now.getMonth(),1);
+  const last=new Date(now.getFullYear(),now.getMonth()+1,0);
+  desdeEl.value=first.toISOString().slice(0,10);
+  hastaEl.value=last.toISOString().slice(0,10);
+  quickDateEl.value="rango";
+}
+
+function escapeCSVValue(v){
+  const s=String(v ?? "");
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
+  return s;
+}
+
+function downloadCSVFile(filename, headerCols, rows){
+  const bom="\ufeff";
+  const lines=[];
+  lines.push(headerCols.map(escapeCSVValue).join(","));
+  for(const r of rows){
+    lines.push(r.map(escapeCSVValue).join(","));
   }
+  const csv=bom + lines.join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
-async function refreshLiveCount(){
-  if (!sessionId || closed) return;
+function estadoSesion(s){
+  return s && s.termino_en ? "Cerrada" : "Activa";
+}
 
-  try{
-    const { count, error } = await db
-      .from("asistencias_v2")
-      .select("sesion_id", { count: "exact", head: true })
-      .eq("sesion_id", sessionId);
+function ymdToday(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
 
-    if (error) {
-      console.error("[CIAC] LiveCount ERROR", error);
-      return;
+function parseYMDFromISO(iso){
+  if(!iso) return "";
+  const d=new Date(iso);
+  if(isNaN(d.getTime())) return String(iso).slice(0,10);
+  return d.toISOString().slice(0,10);
+}
+
+function hashColor(str){
+  let h=0;
+  const s=String(str||"");
+  for(let i=0;i<s.length;i++) h=((h<<5)-h)+s.charCodeAt(i), h|=0;
+  const hue=Math.abs(h)%360;
+  return `hsl(${hue} 65% 55%)`;
+}
+
+function clearCanvas(c){
+  const ctx=c.getContext("2d");
+  ctx.clearRect(0,0,c.width,c.height);
+}
+
+function drawPie(canvas, data){
+  const ctx=canvas.getContext("2d");
+  clearCanvas(canvas);
+
+  const values=data.values||[];
+  const labels=data.labels||[];
+  const total=values.reduce((a,b)=>a+b,0);
+
+  if(!total){
+    return;
+  }
+
+  const cx=Math.floor(canvas.width/2);
+  const cy=Math.floor(canvas.height/2);
+  const r=Math.min(cx,cy)-6;
+
+  let start=-Math.PI/2;
+  for(let i=0;i<values.length;i++){
+    const v=values[i];
+    const ang=(v/total)*Math.PI*2;
+    const end=start+ang;
+
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,end);
+    ctx.closePath();
+    ctx.fillStyle=hashColor(labels[i]);
+    ctx.fill();
+
+    ctx.strokeStyle="rgba(0,0,0,.08)";
+    ctx.lineWidth=1;
+    ctx.stroke();
+
+    start=end;
+  }
+
+  ctx.beginPath();
+  ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.strokeStyle="rgba(0,0,0,.15)";
+  ctx.lineWidth=1;
+  ctx.stroke();
+}
+
+function drawBar(canvas, data){
+  const ctx=canvas.getContext("2d");
+  clearCanvas(canvas);
+
+  const labels=data.labels||[];
+  const sesiones=data.sesionesCount||[];
+  const horas=data.horasCount||[];
+
+  const n=labels.length;
+  const maxSes=Math.max(0,...sesiones);
+  const maxHoras=Math.max(0,...horas);
+
+  if(n===0 || maxSes===0){
+    return;
+  }
+
+  const padL=10, padR=10, padT=10, padB=20;
+  const w=canvas.width-padL-padR;
+  const h=canvas.height-padT-padB;
+
+  ctx.font="11px Arial";
+  ctx.fillStyle="#111827";
+
+  const barW = Math.max(10, Math.floor(w / Math.max(1,n) * 0.65));
+  const gap = Math.floor((w - barW*n) / Math.max(1,n+1));
+  let x=padL+gap;
+
+  for(let i=0;i<n;i++){
+    const v=sesiones[i]||0;
+    const bh = maxSes ? Math.round((v/maxSes)*h) : 0;
+    const y=padT+(h-bh);
+
+    ctx.fillStyle=hashColor(labels[i]);
+    ctx.fillRect(x,y,barW,bh);
+
+    ctx.fillStyle="rgba(0,0,0,.2)";
+    ctx.strokeRect(x+0.5,y+0.5,barW-1,bh-1);
+
+    ctx.fillStyle="#111827";
+    ctx.textAlign="center";
+    ctx.fillText(String(v), x+barW/2, y-3);
+
+    ctx.fillStyle="#6b7280";
+    const lbl=labels[i].length>14 ? labels[i].slice(0,12)+"…" : labels[i];
+    ctx.fillText(lbl, x+barW/2, padT+h+14);
+
+    if(maxHoras>0){
+      const hv=horas[i]||0;
+      const hw = Math.max(2, Math.floor(barW*0.25));
+      const hh = maxHoras ? Math.round((hv/maxHoras)*h) : 0;
+      const hy=padT+(h-hh);
+      ctx.fillStyle="rgba(17,24,39,.25)";
+      ctx.fillRect(x+barW-hw, hy, hw, hh);
     }
-    liveCountEl.textContent = String(count ?? 0);
-  }catch(err){
-    console.error("[CIAC] LiveCount ERROR", err);
-  }
-}
 
-function startLiveCount(){
-  stopLiveCount();
-  refreshLiveCount();
-  liveIntervalId = setInterval(refreshLiveCount, 5000);
-}
-
-async function setInTokenOnce(){
-  if (!sessionId || closed) return;
-
-  const token = rand10();
-
-  const { error } = await db
-    .from("sesiones")
-    .update({
-      token_actual: token,
-      token_expira_en: null
-    })
-    .eq("id", sessionId);
-
-  if (error) {
-    setMsg("Error actualizando token entrada: " + error.message, "crimson");
-    return;
+    x += barW + gap;
   }
 
-  const url = `${location.origin}/checkin.html?token=${encodeURIComponent(token)}`;
-  inToken.textContent = token;
-  renderIn(url);
-  inTimer.textContent = "Token activo mientras la sesión esté abierta.";
+  ctx.strokeStyle="rgba(0,0,0,.12)";
+  ctx.beginPath();
+  ctx.moveTo(padL, padT+h+0.5);
+  ctx.lineTo(padL+w, padT+h+0.5);
+  ctx.stroke();
 }
 
-function fmtLocal(iso){
-  if (!iso) return "--";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
-  return d.toLocaleString("es-CL", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", second:"2-digit" });
+function buildTipoData(rows){
+  const map=new Map();
+  for(const r of (rows||[])){
+    const k=(r.tipo||"Sin tipo").trim() || "Sin tipo";
+    map.set(k,(map.get(k)||0)+1);
+  }
+  const entries=Array.from(map.entries()).sort((a,b)=>b[1]-a[1]);
+  return {labels: entries.map(e=>e[0]), values: entries.map(e=>e[1])};
 }
 
-function durationText(startIso, endIso){
-  const a = Date.parse(startIso || "");
-  const b = Date.parse(endIso || "");
-  if (!a || !b || isNaN(a) || isNaN(b) || b < a) return "--";
-  let s = Math.floor((b - a) / 1000);
-  const h = Math.floor(s / 3600); s -= h*3600;
-  const m = Math.floor(s / 60); s -= m*60;
-  const parts = [];
-  if (h) parts.push(`${h}h`);
-  if (m || h) parts.push(`${m}m`);
-  parts.push(`${s}s`);
-  return parts.join(" ");
-}
+function buildTutorData(rows){
+  const mapSes=new Map();
+  const mapHoras=new Map();
 
-function showSummary(area, tutorNombre, startIso, endIso){
-  sumArea.textContent = area || "--";
-  sumTutor.textContent = tutorNombre || "--";
-  sumInicio.textContent = fmtLocal(startIso);
-  sumTermino.textContent = fmtLocal(endIso);
-  sumDuracion.textContent = durationText(startIso, endIso);
+  for(const r of (rows||[])){
+    const t=(r.tutor_correo||"Sin tutor").trim() || "Sin tutor";
+    mapSes.set(t,(mapSes.get(t)||0)+1);
 
-  // ✅ participantes: usa el contador en vivo actual (sin nuevas llamadas)
-  if (sumParticipantes) {
-    const n = parseInt(liveCountEl?.textContent || "0", 10);
-    sumParticipantes.textContent = String(isNaN(n) ? 0 : n);
-  }
-
-  summaryBox.style.display = "block";
-}
-
-/**
- * ETAPA 1.1 — CIERRE 100% CONFIABLE, SIN CORREO
- */
-async function endMentoria(){
-  if (!sessionId) {
-    setMsg("No hay una tutoría activa para finalizar.", "crimson");
-    return;
-  }
-  if (busy) return;
-
-  const sesion_id = sessionId;
-  console.log("[CIAC] Finalizando tutoría", { sesion_id });
-
-  btnEnd.disabled = true;
-  setBusy(true);
-
-  try{
-    const nowIso = new Date().toISOString();
-
-    const { data, error } = await db
-      .from("sesiones")
-      .update({
-        termino_en: nowIso,
-        token_actual: null
-      })
-      .eq("id", sesion_id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("[CIAC] Update ERROR", error);
-      setMsg("No se pudo finalizar la tutoría. Reintenta.", "crimson");
-      btnEnd.disabled = false;
-      return;
-    }
-
-    console.log("[CIAC] Update OK", data);
-
-    closed = true;
-    stopLiveCount();
-
-    const saved = readActiveFromLS();
-    const startIso = sessionCreatedAtIso || saved?.created_at || null;
-
-    const tutorNombre = (tutorNombreEl.value || "").trim();
-    const area = areaEl.value || "";
-
-    saveLastClosedToLS({
-      sesion_id: sesion_id,
-      campus: saved?.campus,
-      sala: saved?.sala,
-      tipo: saved?.tipo,
-      bloque: saved?.bloque,
-      tutor_correo: saved?.tutor_correo,
-      tutor_nombre: tutorNombre,
-      area: area,
-      inicio_real: startIso,
-      termino_en: nowIso
-    });
-
-    clearActiveFromLS();
-
-    setMsg("✅ Tutoría finalizada. QR deshabilitado.", "green");
-
-    // UI cerrada
-    inbox.style.display = "none";
-    inToken.textContent = "CERRADA";
-    inLink.textContent = "—";
-    inLink.href = "#";
-    inTimer.textContent = "Sesión cerrada.";
-    btnEnd.disabled = true;
-
-    showSummary(area, tutorNombre, startIso, nowIso);
-
-  } catch (err) {
-    console.error("[CIAC] Update ERROR", err);
-    setMsg("No se pudo finalizar la tutoría. Reintenta.", "crimson");
-    btnEnd.disabled = false;
-  } finally {
-    setBusy(false);
-    btnEnd.disabled = closed ? true : false;
-  }
-}
-
-async function recoverIfPossible(){
-  const saved = readActiveFromLS();
-  if (!saved?.sessionId) return;
-
-  setMsg("Recuperando sesión activa…");
-  resetUIForNew();
-
-  const { data, error } = await db
-    .from("sesiones")
-    .select("id, created_at, termino_en, token_actual")
-    .eq("id", saved.sessionId)
-    .single();
-
-  if (error || !data){
-    clearActiveFromLS();
-    setMsg("No se pudo recuperar la sesión anterior (ya no existe o no hay acceso).", "crimson");
-    return;
-  }
-
-  if (data.termino_en){
-    sessionCreatedAtIso = data.created_at || saved.created_at || null;
-    clearActiveFromLS();
-    sessionId = data.id;
-    closed = true;
-    stopLiveCount();
-
-    setMsg("ℹ️ Esta sesión ya estaba finalizada.", "#111827");
-
-    // UI cerrada
-    inbox.style.display = "none";
-    inToken.textContent = "CERRADA";
-    inLink.textContent = "—";
-    inLink.href = "#";
-    inTimer.textContent = "Sesión cerrada.";
-    btnEnd.disabled = true;
-
-    const tutorNombre = (tutorNombreEl.value || "").trim();
-    const area = areaEl.value || "";
-    showSummary(area, tutorNombre, sessionCreatedAtIso, data.termino_en);
-    return;
-  }
-
-  sessionId = data.id;
-  sessionCreatedAtIso = data.created_at || saved.created_at || null;
-  closed = false;
-
-  setUIForActive();
-
-  if (data.token_actual){
-    const url = `${location.origin}/checkin.html?token=${encodeURIComponent(data.token_actual)}`;
-    inToken.textContent = data.token_actual;
-    renderIn(url);
-    inTimer.textContent = "Token activo mientras la sesión esté abierta.";
-  } else {
-    await setInTokenOnce();
-  }
-
-  startLiveCount();
-
-  btnEnd.disabled = false;
-  setMsg("✅ Sesión recuperada. QR de entrada activo.", "green");
-}
-
-/* Horario simple */
-function pad2(n){ return String(n).padStart(2,'0'); }
-function buildTimes(startHH=8, endHH=22, stepMin=15){
-  const out = [];
-  for (let h = startHH; h <= endHH; h++){
-    for (let m = 0; m < 60; m += stepMin){
-      if (h === endHH && m > 0) break;
-      out.push(`${pad2(h)}:${pad2(m)}`);
+    if(r.termino_en){
+      const a=Date.parse(r.created_at||"");
+      const b=Date.parse(r.termino_en||"");
+      if(a && b && !isNaN(a) && !isNaN(b) && b>=a){
+        const hrs=(b-a)/3600000;
+        mapHoras.set(t,(mapHoras.get(t)||0)+hrs);
+      }
     }
   }
-  return out;
-}
-const TIMES = buildTimes(8, 22, 15);
-function fillSelect(selectEl, values){
-  selectEl.innerHTML = "";
-  for (const v of values){
-    const o = document.createElement("option");
-    o.value = v;
-    o.textContent = v;
-    selectEl.appendChild(o);
-  }
-}
-function initHorario(){
-  fillSelect(horaInicioEl, TIMES);
-  horaInicioEl.value = "10:00";
-}
-function getBloqueValue(){
-  return horaInicioEl.value;
+
+  const entries=Array.from(mapSes.entries()).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const labels=entries.map(e=>e[0]);
+  const sesionesCount=entries.map(e=>e[1]);
+  const horasCount=labels.map(l=>Number((mapHoras.get(l)||0).toFixed(2)));
+  return {labels, sesionesCount, horasCount};
 }
 
-btnGen.addEventListener("click", async () => {
-  if (busy) return;
+function buildHeatmapData(rows, filtros){
+  const all=(rows||[]);
+  if(!all.length) return {days:[], blocks:[], matrix:[], note:""};
 
-  const saved = readActiveFromLS();
-  if (saved?.sessionId){
-    await recoverIfPossible();
-    return;
+  const from=filtros?.desde || "";
+  const to=filtros?.hasta || "";
+
+  let days=[];
+  let note="";
+
+  if(from && to){
+    const start=new Date(from+"T00:00:00");
+    const end=new Date(to+"T00:00:00");
+    const diff=Math.round((end-start)/86400000);
+    if(!isNaN(diff) && diff>=0){
+      const totalDays=diff+1;
+      if(totalDays>14){
+        note="Rango grande, mostrando últimos 14 días.";
+        const start2=new Date(end);
+        start2.setDate(end.getDate()-13);
+        for(let i=0;i<14;i++){
+          const d=new Date(start2);
+          d.setDate(start2.getDate()+i);
+          days.push(d.toISOString().slice(0,10));
+        }
+      }else{
+        for(let i=0;i<totalDays;i++){
+          const d=new Date(start);
+          d.setDate(start.getDate()+i);
+          days.push(d.toISOString().slice(0,10));
+        }
+      }
+    }
   }
 
-  setMsg("Creando sesión…");
-  setBusy(true);
-
-  const campus = document.getElementById("campus").value;
-  const sala = document.getElementById("sala").value.trim();
-  const area = areaEl.value || "";
-  const bloque = getBloqueValue();
-  const tutorCorreo = document.getElementById("tutor").value.trim().toLowerCase();
-  const tutorNombre = (tutorNombreEl.value || "").trim();
-
-  if (!tutorCorreo.endsWith("@usm.cl")) {
-    setMsg("Ingresa un correo tutor @usm.cl", "crimson");
-    setBusy(false);
-    return;
-  }
-  if (!tutorNombre){
-    setMsg("Completa el nombre del tutor.", "crimson");
-    setBusy(false);
-    return;
-  }
-  if (!area){
-    setMsg("Selecciona el área (tutoría).", "crimson");
-    setBusy(false);
-    return;
-  }
-  if (!sala || !bloque){
-    setMsg("Completa Sala y Hora inicio.", "crimson");
-    setBusy(false);
-    return;
+  if(days.length===0){
+    const uniq=new Set(all.map(r=>parseYMDFromISO(r.created_at)).filter(Boolean));
+    days=Array.from(uniq).sort().slice(-14);
+    if(uniq.size>14) note="Rango grande, mostrando últimos 14 días.";
   }
 
-  saveTutorProfile();
-
-  closed = false;
-  sessionId = null;
-  sessionCreatedAtIso = null;
-  resetUIForNew();
-
-  const codigo6 = String(Math.floor(100000 + Math.random() * 900000));
-  const expiraEnIso = new Date(Date.now() + AUTO_CLOSE_HOURS * 60 * 60 * 1000).toISOString();
-
-  const { data, error } = await db
-    .from("sesiones")
-    .insert([{
-      campus,
-      sala,
-      tipo: area,
-      bloque,
-      tutor_correo: tutorCorreo,
-      codigo6,
-      expira_en: expiraEnIso
-    }])
-    .select("id, created_at")
-    .single();
-
-  if (error) {
-    setMsg("Error crear sesión: " + error.message, "crimson");
-    setBusy(false);
-    return;
+  const blockSet=new Set();
+  for(const r of all){
+    const b=(r.bloque||"").trim();
+    if(b) blockSet.add(b);
   }
-
-  sessionId = data.id;
-  sessionCreatedAtIso = data.created_at || new Date().toISOString();
-  setUIForActive();
-
-  saveActiveToLS({
-    sessionId,
-    campus,
-    sala,
-    tipo: area,
-    bloque,
-    tutor_correo: tutorCorreo,
-    tutor_nombre: tutorNombre,
-    created_at: sessionCreatedAtIso
+  const blocks=Array.from(blockSet).sort((a,b)=>{
+    const na=parseFloat(String(a).replace(/[^\d.]/g,""));
+    const nb=parseFloat(String(b).replace(/[^\d.]/g,""));
+    if(!isNaN(na) && !isNaN(nb) && na!==nb) return na-nb;
+    return String(a).localeCompare(String(b));
   });
 
-  setMsg("✅ Sesión creada. QR de entrada activo.", "green");
+  const dayIndex=new Map(days.map((d,i)=>[d,i]));
+  const blockIndex=new Map(blocks.map((b,i)=>[b,i]));
+  const matrix=blocks.map(()=>days.map(()=>0));
 
-  await setInTokenOnce();
+  for(const r of all){
+    const d=parseYMDFromISO(r.created_at);
+    const b=(r.bloque||"").trim();
+    if(!dayIndex.has(d) || !blockIndex.has(b)) continue;
+    const i=blockIndex.get(b);
+    const j=dayIndex.get(d);
+    matrix[i][j] += 1;
+  }
 
-  startLiveCount();
+  return {days, blocks, matrix, note};
+}
 
-  setBusy(false);
+function renderHeatmap(container, data){
+  container.innerHTML="";
+  const days=data.days||[];
+  const blocks=data.blocks||[];
+  const matrix=data.matrix||[];
+
+  if(!days.length || !blocks.length){
+    return;
+  }
+
+  const table=document.createElement("table");
+  table.className="heat";
+
+  const thead=document.createElement("thead");
+  const trh=document.createElement("tr");
+  const th0=document.createElement("th");
+  th0.textContent="Bloque";
+  th0.className="rowHead";
+  trh.appendChild(th0);
+
+  for(const d of days){
+    const th=document.createElement("th");
+    th.textContent=d.slice(5);
+    trh.appendChild(th);
+  }
+  thead.appendChild(trh);
+  table.appendChild(thead);
+
+  const tbody=document.createElement("tbody");
+  for(let i=0;i<blocks.length;i++){
+    const tr=document.createElement("tr");
+    const th=document.createElement("td");
+    th.textContent=blocks[i];
+    th.className="rowHead";
+    tr.appendChild(th);
+
+    for(let j=0;j<days.length;j++){
+      const v=(matrix[i] && matrix[i][j]) ? matrix[i][j] : 0;
+      const td=document.createElement("td");
+      td.textContent=v ? String(v) : "";
+      td.className = v<=0 ? "h0" : (v===1 ? "h1" : (v===2 ? "h2" : "h3"));
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  container.appendChild(table);
+}
+
+function renderLegends(tipoData, tutorData){
+  legendTipo.innerHTML="";
+  legendTutor.innerHTML="";
+
+  const tVals=tipoData.values||[];
+  const tLabs=tipoData.labels||[];
+  const total=tVals.reduce((a,b)=>a+b,0);
+
+  if(total>0){
+    for(let i=0;i<tLabs.length;i++){
+      const v=tVals[i]||0;
+      const pct=Math.round((v/total)*100);
+      const row=document.createElement("div");
+      row.className="legendRow";
+      row.innerHTML=`<div class="legendLeft"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${hashColor(tLabs[i])};margin-right:8px;"></span>${tLabs[i]}</div><div class="legendRight">${v} · ${pct}%</div>`;
+      legendTipo.appendChild(row);
+    }
+  }
+
+  const sLabs=tutorData.labels||[];
+  const sSes=tutorData.sesionesCount||[];
+  const sHrs=tutorData.horasCount||[];
+
+  if(sLabs.length){
+    for(let i=0;i<sLabs.length;i++){
+      const row=document.createElement("div");
+      row.className="legendRow";
+      const hrs = sHrs[i] ? ` · ${Number(sHrs[i]).toFixed(1)} h` : "";
+      row.innerHTML=`<div class="legendLeft"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${hashColor(sLabs[i])};margin-right:8px;"></span>${sLabs[i]}</div><div class="legendRight">${sSes[i]} ses${hrs}</div>`;
+      legendTutor.appendChild(row);
+    }
+  }
+}
+
+function updateAnalytics(rows, filtros){
+  const tipoData=buildTipoData(rows);
+  const tutorData=buildTutorData(rows);
+  const heatData=buildHeatmapData(rows, filtros);
+
+  const hasTipo = (tipoData.values||[]).reduce((a,b)=>a+b,0) > 0;
+  const hasTutor = (tutorData.sesionesCount||[]).reduce((a,b)=>a+b,0) > 0;
+  const hasHeat = (heatData.days||[]).length>0 && (heatData.blocks||[]).length>0;
+
+  noTipo.style.display = hasTipo ? "none" : "block";
+  noTutor.style.display = hasTutor ? "none" : "block";
+  noHeat.style.display = hasHeat ? "none" : "block";
+
+  if(hasTipo) drawPie(chartTipo, tipoData); else clearCanvas(chartTipo);
+  if(hasTutor) drawBar(chartTutor, tutorData); else clearCanvas(chartTutor);
+
+  if(hasHeat){
+    renderHeatmap(heatmapOcupacion, heatData);
+    if(heatData.note){
+      heatNote.style.display="block";
+      heatNote.textContent=heatData.note;
+    }else{
+      heatNote.style.display="none";
+      heatNote.textContent="";
+    }
+  }else{
+    heatmapOcupacion.innerHTML="";
+    heatNote.style.display="none";
+    heatNote.textContent="";
+  }
+
+  renderLegends(tipoData, tutorData);
+  analyticsMsg.textContent = rows && rows.length ? `${rows.length} sesiones` : "";
+}
+
+async function boot(){
+  setStatus("Cargando filtros…");
+  await loadFilterLists();
+  setStatus("Listo.");
+  await cargar();
+}
+
+async function loadFilterLists(){
+  const {data,error}=await db
+    .from("sesiones")
+    .select("campus,tipo,tutor_correo")
+    .order("created_at",{ascending:false})
+    .limit(2000);
+
+  if(error){
+    console.error("[CIAC] error", error);
+    setStatus("Error cargando filtros: "+error.message,true);
+    return;
+  }
+
+  const campusSet=new Set();
+  const areaSet=new Set();
+  const tutorSet=new Set();
+
+  for(const r of (data||[])){
+    if(r?.campus) campusSet.add(r.campus);
+    if(r?.tipo) areaSet.add(r.tipo);
+    if(r?.tutor_correo) tutorSet.add(r.tutor_correo);
+  }
+
+  selCampusEl.innerHTML=`<option value="">Todos</option>`;
+  Array.from(campusSet).sort().forEach(v=>{
+    const o=document.createElement("option");
+    o.value=v; o.textContent=v;
+    selCampusEl.appendChild(o);
+  });
+
+  selAreaEl.innerHTML=`<option value="">Todas</option>`;
+  Array.from(areaSet).sort().forEach(v=>{
+    const o=document.createElement("option");
+    o.value=v; o.textContent=v;
+    selAreaEl.appendChild(o);
+  });
+
+  selTutorEl.innerHTML=`<option value="">Todos</option>`;
+  Array.from(tutorSet).sort().forEach(v=>{
+    const o=document.createElement("option");
+    o.value=v; o.textContent=v;
+    selTutorEl.appendChild(o);
+  });
+}
+
+function buildFilters(){
+  const filtros={
+    quickDate: quickDateEl.value,
+    desde: desdeEl.value || "",
+    hasta: hastaEl.value || "",
+    campus: selCampusEl.value || "",
+    area: selAreaEl.value || "",
+    tutor: selTutorEl.value || "",
+    estado: selEstadoEl.value || "",
+    q: (qEl.value||"").trim().toLowerCase()
+  };
+  console.log("[CIAC] filtros", filtros);
+  return filtros;
+}
+
+function applyLocalSearch(rows, filtros){
+  if(!filtros.q) return rows;
+  return rows.filter(r=>{
+    const hay=[r.campus,r.sala,r.tipo,r.bloque,r.tutor_correo,r.codigo6,r.id].join(" ").toLowerCase();
+    return hay.includes(filtros.q);
+  });
+}
+
+async function cargar(){
+  const filtros=buildFilters();
+
+  btnFiltrar.disabled=true;
+  btnCSV.disabled=true;
+  btnLimpiar.disabled=true;
+  rowsEl.innerHTML="";
+  LAST_ROWS=[];
+  LAST_SESIONES_RAW=[];
+  COUNTS_BY_ID=new Map();
+  closeDetail(true);
+
+  setStatus("Cargando…");
+
+  const fromIso=toISODateStart(filtros.desde);
+  const toIso=toISODateEnd(filtros.hasta);
+
+  let query=db
+    .from("sesiones")
+    .select("id, created_at, termino_en, campus, sala, tipo, bloque, tutor_correo, codigo6, token_actual")
+    .order("created_at",{ascending:false});
+
+  if(fromIso) query=query.gte("created_at",fromIso);
+  if(toIso) query=query.lte("created_at",toIso);
+
+  if(filtros.campus) query=query.eq("campus",filtros.campus);
+  if(filtros.area) query=query.eq("tipo",filtros.area);
+  if(filtros.tutor) query=query.eq("tutor_correo",filtros.tutor);
+
+  if(filtros.estado==="activa") query=query.is("termino_en", null);
+  if(filtros.estado==="cerrada") query=query.not("termino_en","is", null);
+
+  const {data:sesiones,error}=await query;
+
+  if(error){
+    console.error("[CIAC] error", error);
+    setStatus("Error: "+error.message,true);
+    btnFiltrar.disabled=false;
+    btnCSV.disabled=false;
+    btnLimpiar.disabled=false;
+    return;
+  }
+
+  LAST_SESIONES_RAW = sesiones || [];
+  console.log("[CIAC] sesiones", LAST_SESIONES_RAW);
+
+  metaLine.textContent=`Período: ${filtros.desde || "—"} a ${filtros.hasta || "—"} · Tutor: ${filtros.tutor || "Todos"} · Área: ${filtros.area || "Todas"} · Campus: ${filtros.campus || "Todos"} · Estado: ${filtros.estado ? (filtros.estado==="activa"?"Activas":"Cerradas") : "Todas"}`;
+
+  if(!LAST_SESIONES_RAW.length){
+    setStatus("Sin resultados.");
+    updateKPIs([]);
+    updateAnalytics([], filtros);
+    btnFiltrar.disabled=false;
+    btnCSV.disabled=false;
+    btnLimpiar.disabled=false;
+    return;
+  }
+
+  const sesionesBuscadas = applyLocalSearch(LAST_SESIONES_RAW, filtros);
+
+  if(!sesionesBuscadas.length){
+    setStatus("Sin resultados con la búsqueda actual.");
+    updateKPIs([]);
+    updateAnalytics([], filtros);
+    btnFiltrar.disabled=false;
+    btnCSV.disabled=false;
+    btnLimpiar.disabled=false;
+    return;
+  }
+
+  setStatus("Calculando participantes…");
+
+  const ids=sesionesBuscadas.map(s=>s.id);
+  const {data:asist,error:e2}=await db
+    .from("asistencias_v2")
+    .select("sesion_id, correo_alumno")
+    .in("sesion_id", ids);
+
+  if(e2){
+    console.error("[CIAC] error", e2);
+    setStatus("Error participantes: "+e2.message,true);
+    btnFiltrar.disabled=false;
+    btnCSV.disabled=false;
+    btnLimpiar.disabled=false;
+    return;
+  }
+
+  const uniqBySesion=new Map();
+  for(const a of (asist||[])){
+    const sid=a?.sesion_id;
+    if(!sid) continue;
+    const correo=(a?.correo_alumno||"").trim().toLowerCase();
+    if(!uniqBySesion.has(sid)) uniqBySesion.set(sid,new Set());
+    if(correo) uniqBySesion.get(sid).add(correo);
+  }
+
+  COUNTS_BY_ID=new Map();
+  for(const s of sesionesBuscadas){
+    const set=uniqBySesion.get(s.id);
+    COUNTS_BY_ID.set(s.id, set ? set.size : 0);
+  }
+
+  rowsEl.innerHTML="";
+  LAST_ROWS=[];
+
+  for(const s of sesionesBuscadas){
+    const n=COUNTS_BY_ID.get(s.id) || 0;
+    const estado=estadoSesion(s);
+    const mins=minutesBetween(s.created_at,s.termino_en);
+
+    LAST_ROWS.push({
+      id: s.id,
+      created_at: s.created_at,
+      campus: s.campus || "",
+      sala: s.sala || "",
+      tipo: s.tipo || "",
+      bloque: s.bloque || "",
+      tutor_correo: s.tutor_correo || "",
+      termino_en: s.termino_en || "",
+      estado,
+      participantes: n,
+      duracion_min: mins ?? ""
+    });
+
+    rowsEl.innerHTML += `
+      <tr>
+        <td>${fmtDT(s.created_at)}</td>
+        <td>${s.campus || ""}</td>
+        <td>${s.sala || ""}</td>
+        <td>${s.tipo || ""}</td>
+        <td>${s.bloque || ""}</td>
+        <td>${s.tutor_correo || ""}</td>
+        <td>${estado === "Cerrada" ? `<span class="badgeOk">Cerrada</span>` : `<span class="badgeWarn">Activa</span>`}</td>
+        <td class="right">${n}</td>
+        <td class="right">
+          <button class="btn btnGhost" data-action="ver" data-id="${s.id}">Ver</button>
+        </td>
+      </tr>
+    `;
+  }
+
+  updateKPIs(LAST_ROWS);
+  updateAnalytics(LAST_ROWS, filtros);
+
+  setStatus(`Registros: ${sesionesBuscadas.length} sesiones.`);
+  btnFiltrar.disabled=false;
+  btnCSV.disabled=false;
+  btnLimpiar.disabled=false;
+}
+
+function updateKPIs(rows){
+  const totalSes=rows.length;
+  const tutors=new Set();
+  let totalMin=0;
+  let counted=0;
+
+  for(const r of rows){
+    if(r.tutor_correo) tutors.add(r.tutor_correo);
+    const mins=(typeof r.duracion_min==="number")?r.duracion_min:(r.duracion_min===""?null:Number(r.duracion_min));
+    if(mins!==null && !isNaN(mins)){
+      totalMin+=mins;
+      counted++;
+    }
+  }
+
+  const totalHoras=totalMin/60;
+  const promMin=counted?Math.round(totalMin/counted):0;
+
+  kSes.textContent=String(totalSes);
+  kHoras.textContent=totalSes?totalHoras.toFixed(1):"0";
+  kProm.textContent=totalSes?durationHuman(promMin):"0";
+  kTut.textContent=String(tutors.size);
+}
+
+async function openDetail(sesionId){
+  console.log("[CIAC] abrir detalle", sesionId);
+
+  const sesion = (LAST_SESIONES_RAW || []).find(s=>String(s.id)===String(sesionId))
+    || (LAST_ROWS || []).find(s=>String(s.id)===String(sesionId));
+
+  OPEN_DETAIL_SESSION = sesion || { id: sesionId };
+
+  detailWrap.style.display="block";
+  detailRows.innerHTML="";
+  detailMsg.textContent="Cargando…";
+  btnCSVSession.disabled=true;
+  btnCloseDetail.disabled=true;
+
+  const estado = sesion ? estadoSesion(sesion) : "—";
+  const campus = sesion?.campus || "";
+  const sala = sesion?.sala || "";
+  const tipo = sesion?.tipo || "";
+  const bloque = sesion?.bloque || "";
+  const tutor = sesion?.tutor_correo || "";
+  const inicio = sesion?.created_at ? fmtDT(sesion.created_at) : "—";
+  const termino = sesion?.termino_en ? fmtDT(sesion.termino_en) : "—";
+
+  detailTitle.textContent = `Detalle de sesión: ${String(sesionId)}`;
+  detailMeta.textContent = `Campus: ${campus} · Sala: ${sala} · Área: ${tipo} · Bloque: ${bloque} · Tutor: ${tutor} · Inicio: ${inicio} · Término: ${termino} · Estado: ${estado}`;
+
+  const {data, error} = await db
+    .from("asistencias_v2")
+    .select("sesion_id, created_at, nombre_completo, correo_alumno")
+    .eq("sesion_id", sesionId)
+    .order("created_at", { ascending: true });
+
+  if(error){
+    console.error("[CIAC] error", error);
+    detailMsg.style.color="crimson";
+    detailMsg.textContent="Error cargando participantes: "+error.message;
+    detailCount.textContent="Participantes: —";
+    btnCloseDetail.disabled=false;
+    btnCSVSession.disabled=true;
+    LAST_PARTICIPANTES=[];
+    return;
+  }
+
+  LAST_PARTICIPANTES = data || [];
+  console.log("[CIAC] participantes", LAST_PARTICIPANTES);
+
+  const n = (COUNTS_BY_ID.get(sesionId) ?? (data ? data.length : 0)) || 0;
+  detailCount.textContent = `Participantes: ${n}`;
+
+  if(!LAST_PARTICIPANTES.length){
+    detailRows.innerHTML = `<tr><td colspan="3" class="muted">Sin participantes</td></tr>`;
+    detailMsg.style.color="";
+    detailMsg.textContent="";
+    btnCloseDetail.disabled=false;
+    btnCSVSession.disabled=false;
+    return;
+  }
+
+  detailRows.innerHTML = "";
+  for(const p of LAST_PARTICIPANTES){
+    detailRows.innerHTML += `
+      <tr>
+        <td>${p.nombre_completo || ""}</td>
+        <td>${p.correo_alumno || ""}</td>
+        <td>${fmtDT(p.created_at)}</td>
+      </tr>
+    `;
+  }
+
+  detailMsg.style.color="";
+  detailMsg.textContent="";
+  btnCloseDetail.disabled=false;
+  btnCSVSession.disabled=false;
+}
+
+function closeDetail(silent=false){
+  OPEN_DETAIL_SESSION=null;
+  LAST_PARTICIPANTES=[];
+  detailWrap.style.display="none";
+  detailRows.innerHTML="";
+  detailMsg.textContent="";
+  if(!silent){
+    setStatus("Listo.");
+  }
+}
+
+function exportGeneralCSV(){
+  const today=ymdToday();
+  const filename=`ciac_sesiones_${today}.csv`;
+
+  const header=["id","created_at","campus","sala","tipo","bloque","tutor_correo","termino_en","estado","participantes"];
+  const rows=(LAST_ROWS||[]).map(r=>[
+    r.id,
+    r.created_at,
+    r.campus,
+    r.sala,
+    r.tipo,
+    r.bloque,
+    r.tutor_correo,
+    r.termino_en,
+    r.estado,
+    r.participantes
+  ]);
+
+  downloadCSVFile(filename, header, rows);
+}
+
+function exportSessionCSV(){
+  const sesionId = OPEN_DETAIL_SESSION?.id;
+  if(!sesionId) return;
+
+  const today=ymdToday();
+  const filename=`ciac_sesion_${sesionId}_${today}.csv`;
+
+  const header=["sesion_id","created_at","nombre_completo","correo_alumno"];
+  const rows=(LAST_PARTICIPANTES||[]).map(p=>[
+    p.sesion_id ?? sesionId,
+    p.created_at ?? "",
+    p.nombre_completo ?? "",
+    p.correo_alumno ?? ""
+  ]);
+
+  downloadCSVFile(filename, header, rows);
+}
+
+rowsEl.addEventListener("click",(e)=>{
+  const btn=e.target?.closest?.("button[data-action='ver']");
+  if(!btn) return;
+  const id=btn.getAttribute("data-id");
+  openDetail(id);
 });
 
-btnEnd.addEventListener("click", async () => {
-  const ok = confirm("¿Finalizar tutoría? Esto registrará la hora de término e invalidará el QR.");
-  if (ok) await endMentoria();
+btnCloseDetail.onclick=()=>closeDetail();
+
+btnCSVSession.onclick=async ()=>{
+  btnCSVSession.disabled=true;
+  try{
+    exportSessionCSV();
+  }finally{
+    btnCSVSession.disabled=false;
+  }
+};
+
+btnCSV.onclick=async ()=>{
+  btnCSV.disabled=true;
+  try{
+    exportGeneralCSV();
+  }finally{
+    btnCSV.disabled=false;
+  }
+};
+
+btnFiltrar.onclick=()=>cargar;
+
+btnLimpiar.onclick=async ()=>{
+  qEl.value="";
+  selTutorEl.value="";
+  selAreaEl.value="";
+  selCampusEl.value="";
+  selEstadoEl.value="";
+  quickDateEl.value="rango";
+  initDefaults();
+  await cargar();
+};
+
+quickDateEl.addEventListener("change", async ()=>{
+  const v=quickDateEl.value;
+  if(v==="hoy") setTodayRange();
+  if(v==="semana") setWeekRange();
+  await cargar();
 });
 
-window.addEventListener("load", async () => {
-  initHorario();
-  loadTutorProfile();
-  await recoverIfPossible();
-});
+function resizeCharts(){
+  const fit=(c)=>{
+    const parent=c.parentElement;
+    if(!parent) return;
+    const maxW=parent.clientWidth-22;
+    if(maxW>0 && c.width!==maxW){
+      c.width=Math.min(maxW, 520);
+    }
+  };
+  fit(chartTutor);
+}
+window.addEventListener("resize", ()=>{ try{ resizeCharts(); }catch(_){} });
 </script>
 
 </body>
