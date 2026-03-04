@@ -143,7 +143,7 @@ const AUTO_CLOSE_HOURS = 3; // expira_en NOT NULL
 
 const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // UI
 const msg = document.getElementById("msg");
@@ -180,10 +180,12 @@ let busy = false;
 let sessionCreatedAtIso = null;
 
 function setBusy(v){
-  busy = !!v;
-  btnGen.disabled = busy;
-  btnEnd.disabled = busy || !sessionId || closed;
+  busy = v;
+  btnGen.disabled = !!v;
+  // el btnEnd lo controlamos según estado para evitar confusión
+  btnEnd.disabled = !!v || !sessionId || closed;
 }
+
 function setMsg(text, color="#111827"){
   msg.style.color = color;
   msg.textContent = text;
@@ -193,12 +195,22 @@ function rand10(){
   const r = (crypto?.randomUUID ? crypto.randomUUID().replace(/-/g,'') : (Date.now()+''+Math.random()).replace('.',''));
   return r.slice(0, 10);
 }
+
 function qrUrl(url, size=190){
   return "https://api.qrserver.com/v1/create-qr-code/?size="+size+"x"+size+"&data=" + encodeURIComponent(url);
 }
+
 function renderIn(url){
   qrIn.src = qrUrl(url, 190);
   inLink.textContent = url;
+}
+
+function clearQrUIClosed(){
+  // Mantener diseño: ocultar QR y neutralizar link/token visualmente
+  inbox.style.display = "none";
+  inToken.textContent = "CERRADA";
+  inLink.textContent = "";
+  inTimer.textContent = "Sesión cerrada.";
 }
 
 function saveActiveToLS(payload){
@@ -239,8 +251,8 @@ function loadTutorProfile(){
 
 function setUIForActive(){
   inbox.style.display = "block";
-  btnEnd.disabled = false;
   summaryBox.style.display = "none";
+  btnEnd.disabled = false;
 }
 
 function resetUIForNew(){
@@ -252,24 +264,17 @@ function resetUIForNew(){
   inTimer.textContent = "Token activo mientras la sesión esté abierta.";
 }
 
-function markUICerrada(){
-  // Mantener diseño: ocultar QR + dejar un estado claro
-  inbox.style.display = "none";
-  inToken.textContent = "CERRADA";
-  inLink.textContent = "";
-  inTimer.textContent = "Sesión cerrada.";
-  btnEnd.disabled = true;
-}
-
 async function setInTokenOnce(){
   if (!sessionId || closed) return;
 
   const token = rand10();
 
-  // ✅ Solo tocar token_actual (cambios mínimos)
-  const { error } = await supabase
+  const { error } = await db
     .from("sesiones")
-    .update({ token_actual: token })
+    .update({
+      token_actual: token,
+      token_expira_en: null
+    })
     .eq("id", sessionId);
 
   if (error) {
@@ -314,27 +319,31 @@ function showSummary(area, tutorNombre, startIso, endIso){
 }
 
 /**
- * ETAPA 1.1 — CIERRE 100% CONFIABLE (SIN CORREO)
+ * CIERRE 100% CONFIABLE (SIN CORREO)
+ * - Valida sesion_id
+ * - Deshabilita botón durante proceso
+ * - Update: termino_en, token_actual=null (no tocar otros campos)
+ * - Si OK: éxito + UI cerrada + limpiar LS y estado QR
+ * - Si falla: mensaje claro, NO cambiar UI activa, log en consola
  */
 async function endMentoria(){
-  // A1) Validar sesión activa
+  // 1) Validar sesion_id
   if (!sessionId) {
     setMsg("No hay una mentoría activa para finalizar.", "crimson");
     return;
   }
   if (busy) return;
 
-  // A2) Deshabilitar botón durante proceso
   setBusy(true);
+  btnEnd.disabled = true;
 
   const sesion_id = sessionId;
   console.log("[CIAC] Finalizando mentoría", { sesion_id });
 
   try{
-    // A3) Update requerido (solo 2 campos)
     const nowIso = new Date().toISOString();
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("sesiones")
       .update({
         termino_en: nowIso,
@@ -345,15 +354,17 @@ async function endMentoria(){
       .single();
 
     if (error) {
-      // A5) Si falla: mensaje claro + mantener UI activa
       console.error("[CIAC] Update ERROR", error);
       setMsg("No se pudo finalizar la mentoría. Reintenta.", "crimson");
+
+      // Mantener estado activo: no tocar token/QR, no limpiar LS, no marcar closed
+      btnEnd.disabled = false;
       return;
     }
 
-    // A4) OK
     console.log("[CIAC] Update OK", data);
 
+    // 4) Update OK => cerrar estado local/UI
     closed = true;
 
     const saved = readActiveFromLS();
@@ -362,7 +373,7 @@ async function endMentoria(){
     const tutorNombre = (tutorNombreEl.value || "").trim();
     const area = areaEl.value || "";
 
-    // Guardar último cierre (opcional, útil para reporte)
+    // Guardar último cierre (útil para reporte futuro)
     saveLastClosedToLS({
       sesion_id: sesion_id,
       campus: saved?.campus,
@@ -376,30 +387,35 @@ async function endMentoria(){
       termino_en: nowIso
     });
 
-    // Limpiar LS sesión activa para no "recuperarla" luego
+    // Limpiar sesión activa del LS (para evitar "recuperar" algo ya cerrado)
     clearActiveFromLS();
 
-    // Mensaje éxito sin mencionar correo
+    // Mensaje éxito
     setMsg("✅ Mentoría finalizada. QR deshabilitado.", "green");
 
-    // UI cerrada: ocultar QR y bloquear link/estado
-    markUICerrada();
+    // UI cerrada: ocultar QR / bloquear link / estado visible
+    clearQrUIClosed();
+    btnEnd.disabled = true;
 
-    // Conservar datos base en pantalla (inputs siguen igual) + mostrar resumen
+    // Mantener resumen en pantalla (datos base conservados)
     showSummary(area, tutorNombre, startIso, nowIso);
 
-    // Limpiar variables locales relacionadas a token/qr (sin romper compatibilidad)
-    // (conservar sessionId en memoria no afecta, pero ya está closed=true y btnEnd deshabilitado)
+    // Limpiar variables locales relacionadas a token/qr (sin borrar inputs base)
+    inToken.textContent = "CERRADA";
     inLink.textContent = "";
-    // inToken ya quedó "CERRADA"
+    // Mantener sessionId para no confundir? mejor mantener, pero ya closed=true, btnEnd deshabilitado.
+    // Si prefieres, puedes dejar sessionId (sirve para debug), pero no se usa para reabrir.
 
   }catch(err){
     console.error("[CIAC] Update ERROR", err);
     setMsg("No se pudo finalizar la mentoría. Reintenta.", "crimson");
+    // Mantener UI activa (no cambiar closed)
+    closed = false;
+    btnEnd.disabled = false;
   }finally{
-    // C3) Asegurar re-habilitación/estado final
     setBusy(false);
-    btnEnd.disabled = !sessionId || closed;
+    // Si quedó cerrada, mantener deshabilitado; si no, re-habilitar
+    btnEnd.disabled = closed || !sessionId;
   }
 }
 
@@ -410,7 +426,7 @@ async function recoverIfPossible(){
   setMsg("Recuperando sesión activa…");
   resetUIForNew();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("sesiones")
     .select("id, created_at, termino_en, token_actual")
     .eq("id", saved.sessionId)
@@ -431,7 +447,8 @@ async function recoverIfPossible(){
     setMsg("ℹ️ Esta sesión ya estaba finalizada.", "#111827");
 
     // UI cerrada confiable
-    markUICerrada();
+    clearQrUIClosed();
+    btnEnd.disabled = true;
 
     const tutorNombre = (tutorNombreEl.value || "").trim();
     const area = areaEl.value || "";
@@ -538,7 +555,7 @@ btnGen.addEventListener("click", async () => {
   const codigo6 = String(Math.floor(100000 + Math.random() * 900000));
   const expiraEnIso = new Date(Date.now() + AUTO_CLOSE_HOURS * 60 * 60 * 1000).toISOString();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("sesiones")
     .insert([{
       campus,
