@@ -7,28 +7,166 @@
 <link rel="icon" href="data:,">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500,650&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
 <style>
-:root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; --muted:#6b7280; --line:#e5e7eb; --cta:#f3c623; --danger:#b91c1c; }
-body{ margin:0; font-family:Arial, sans-serif; background:var(--bg); color:#111827; }
-.topbar{ background:var(--blue); color:#fff; padding:16px 22px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.brand{ font-weight:900; letter-spacing:.2px; }
-a{ color:#fff; text-decoration:none; font-weight:900; }
+:root{
+  --bg:#EAF2FB;
+  --bg2:#DDEBFA;
+  --card:#FFFFFF;
 
-.wrap{ max-width:1100px; margin:22px auto; padding:0 14px; }
-.card{ background:#fff; border-radius:14px; box-shadow:0 8px 20px rgba(0,0,0,.08); border:1px solid var(--line); padding:16px; }
-h1{ margin:0 0 6px; font-size:20px; }
-.muted{ color:var(--muted); font-size:12px; line-height:1.35; }
+  --text:#111827;
+  --muted:#6B7280;
+  --line:rgba(17,24,39,.10);
 
-.bar{ display:flex; gap:10px; flex-wrap:wrap; margin:12px 0; align-items:end; }
-.field{ display:flex; flex-direction:column; gap:4px; }
-label{ font-size:11px; color:var(--muted); font-weight:900; text-transform:uppercase; letter-spacing:.3px; }
-input,select{ padding:10px; border:1px solid #d1d5db; border-radius:10px; background:#fff; min-width:170px; }
+  --primary:#F06C6C;
+  --primary2:#F4A6A6;
+  --blue:#5E86C7;
+  --success:#2E9B73;
+  --danger:#E35D6A;
+
+  --radius:18px;
+  --radius2:14px;
+  --shadow:0 18px 40px rgba(17,24,39,.10);
+}
+
+*{ box-sizing:border-box; }
+body{
+  margin:0;
+  font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(800px 420px at 18% 8%, rgba(240,108,108,.20), transparent 60%),
+    radial-gradient(720px 420px at 92% 22%, rgba(94,134,199,.18), transparent 55%),
+    radial-gradient(860px 520px at 55% 105%, rgba(79,191,158,.14), transparent 60%),
+    var(--bg);
+}
+
+/* Topbar */
+.topbar{
+  position:sticky; top:0; z-index:5;
+  background:rgba(234,242,251,.76);
+  backdrop-filter:saturate(140%) blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.topbarInner{
+  max-width:1180px;
+  margin:0 auto;
+  padding:14px 18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.brand{
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+  font-family:Fraunces, serif;
+  font-weight:650;
+  letter-spacing:.2px;
+}
+.brand small{
+  font-family:Inter, sans-serif;
+  font-weight:600;
+  color:var(--muted);
+  letter-spacing:.2px;
+}
+.topbar a{
+  color:var(--text);
+  text-decoration:none;
+  font-weight:600;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.7);
+}
+.topbar a:hover{ background:#fff; }
+
+/* Layout */
+.wrap{ max-width:1180px; margin:22px auto; padding:0 18px 40px; }
+
+.card{
+  background:rgba(255,255,255,.86);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  border:1px solid var(--line);
+  padding:18px;
+}
+
+h1{
+  margin:0 0 6px;
+  font-family:Fraunces, serif;
+  font-weight:650;
+  font-size:22px;
+}
+.muted{ color:var(--muted); font-size:12px; line-height:1.45; }
+#subhead{ margin-bottom:10px; }
+
+/* Filters bar */
+.bar{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:14px 0 10px;
+  align-items:end;
+  padding:12px;
+  border-radius:var(--radius);
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.78);
+}
+
+.field{ display:flex; flex-direction:column; gap:6px; }
+label{
+  font-size:11px;
+  color:var(--muted);
+  font-weight:700;
+  letter-spacing:.35px;
+  text-transform:uppercase;
+}
+input,select{
+  padding:12px 12px;
+  border:1px solid rgba(17,24,39,.12);
+  border-radius:14px;
+  background:#fff;
+  min-width:170px;
+  outline:none;
+}
 input[type="date"]{ min-width:150px; }
-.btn{ padding:10px 12px; border:0; border-radius:10px; cursor:pointer; font-weight:900; background:var(--blue); color:#fff; }
-.btnAlt{ background:#111827; }
-.btnWarn{ background:var(--cta); color:#111827; }
+input:focus, select:focus{
+  border-color: rgba(240,108,108,.55);
+  box-shadow: 0 0 0 4px rgba(240,108,108,.14);
+}
+
+.btn{
+  padding:12px 14px;
+  border:1px solid transparent;
+  border-radius:14px;
+  cursor:pointer;
+  font-weight:700;
+  background:linear-gradient(180deg, var(--primary), #E85D62);
+  color:#fff;
+  box-shadow: 0 12px 24px rgba(240,108,108,.18);
+}
+.btn:hover{ filter:brightness(.98); }
+.btnAlt{
+  background:#fff;
+  color:var(--text);
+  border-color: rgba(17,24,39,.12);
+  box-shadow:none;
+}
+.btnAlt:hover{ background:rgba(17,24,39,.04); }
+.btnWarn{
+  background:#fff;
+  color:var(--text);
+  border-color: rgba(240,108,108,.35);
+  box-shadow:none;
+}
+.btnWarn:hover{ background: rgba(240,108,108,.08); }
 .btnDanger{ background:var(--danger); }
-.btn:disabled{ opacity:.55; cursor:not-allowed; }
+.btn:disabled{ opacity:.55; cursor:not-allowed; box-shadow:none; }
 
 .grid{
   display:grid;
@@ -39,6 +177,8 @@ input[type="date"]{ min-width:150px; }
 @media(min-width: 960px){
   .grid{ grid-template-columns: 1fr 1fr; }
 }
+
+/* KPIs */
 .kpis{
   display:grid;
   grid-template-columns: repeat(2, minmax(0,1fr));
@@ -49,99 +189,190 @@ input[type="date"]{ min-width:150px; }
 }
 .kpi{
   border:1px solid var(--line);
-  border-radius:14px;
-  padding:12px;
-  background:#fff;
+  border-radius:var(--radius);
+  padding:14px;
+  background:rgba(255,255,255,.92);
 }
-.kpi .t{ font-size:11px; color:var(--muted); font-weight:900; text-transform:uppercase; letter-spacing:.3px; }
-.kpi .v{ font-size:20px; font-weight:900; margin-top:6px; }
-.kpi .s{ font-size:12px; color:var(--muted); margin-top:4px; }
+.kpi .t{
+  font-size:11px;
+  color:var(--muted);
+  font-weight:700;
+  letter-spacing:.35px;
+  text-transform:uppercase;
+}
+.kpi .v{
+  font-size:22px;
+  font-weight:800;
+  margin-top:8px;
+}
+.kpi .s{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:6px;
+  line-height:1.35;
+}
 
+/* Charts */
 .chartBox{
   border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:14px;
+  background:rgba(255,255,255,.92);
+}
+.chartTitle{
+  font-weight:700;
+  font-size:13px;
+  margin:0 0 10px;
+}
+canvas{
+  width:100%;
+  height:240px;
+  display:block;
   border-radius:14px;
-  padding:12px;
+  border:1px solid rgba(17,24,39,.10);
   background:#fff;
 }
-.chartTitle{ font-weight:900; font-size:13px; margin:0 0 8px; }
-canvas{ width:100%; height:240px; display:block; border-radius:10px; border:1px solid var(--line); background:#fff; }
 
+/* Table */
 .tableWrap{
   margin-top:12px;
   border:1px solid var(--line);
-  border-radius:14px;
+  border-radius:var(--radius);
   overflow:hidden;
-  background:#fff;
+  background:rgba(255,255,255,.92);
 }
 table{ width:100%; border-collapse:collapse; }
-th,td{ padding:10px; border-bottom:1px solid var(--line); text-align:left; font-size:13px; vertical-align:top; }
-th{ font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:#0f172a; background:#f8fafc; }
-tr:hover td{ background:#fcfcfd; }
+th,td{
+  padding:12px 10px;
+  border-bottom:1px solid rgba(17,24,39,.08);
+  text-align:left;
+  font-size:13px;
+  vertical-align:top;
+}
+th{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+  color:#0f172a;
+  background:rgba(221,235,250,.55);
+  font-weight:700;
+}
+tr:hover td{ background:rgba(17,24,39,.02); }
 
+/* Badges */
 .badge{
   display:inline-block;
-  padding:4px 8px;
+  padding:4px 10px;
   border-radius:999px;
   font-size:11px;
-  font-weight:900;
-  border:1px solid var(--line);
+  font-weight:700;
+  border:1px solid rgba(17,24,39,.10);
   background:#fff;
 }
-.badgeOk{ background:#ecfdf5; border-color:#a7f3d0; color:#065f46; }
-.badgeOpen{ background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8; }
-.badgeWarn{ background:#fffbeb; border-color:#fcd34d; color:#92400e; }
+.badgeOk{ background:rgba(46,155,115,.10); border-color:rgba(46,155,115,.22); color:#0b5a3c; }
+.badgeOpen{ background:rgba(94,134,199,.10); border-color:rgba(94,134,199,.22); color:#1d4ed8; }
+.badgeWarn{ background:rgba(240,108,108,.10); border-color:rgba(240,108,108,.22); color:#8b2d33; }
 
+/* Actions */
 .actions{ display:flex; gap:8px; flex-wrap:wrap; }
 .smallBtn{
-  padding:8px 10px;
-  border-radius:10px;
-  border:1px solid var(--line);
+  padding:9px 12px;
+  border-radius:14px;
+  border:1px solid rgba(17,24,39,.12);
   background:#fff;
   cursor:pointer;
-  font-weight:900;
+  font-weight:700;
   font-size:12px;
 }
-.smallBtn:hover{ background:#f8fafc; }
+.smallBtn:hover{ background:rgba(17,24,39,.03); }
 
+/* Detail row */
 .detail{
   display:none;
-  padding:12px;
-  background:#f8fafc;
+  background:rgba(221,235,250,.35);
 }
+.detail td{ padding:0; border-bottom:1px solid rgba(17,24,39,.08); }
 .detailGrid{
   display:grid;
   grid-template-columns: 1fr;
-  gap:10px;
+  gap:12px;
+  padding:14px;
 }
 @media(min-width: 900px){
   .detailGrid{ grid-template-columns: 1fr 1fr; }
 }
 .detailCard{
-  border:1px solid var(--line);
-  border-radius:14px;
+  border:1px solid rgba(17,24,39,.10);
+  border-radius:var(--radius);
   background:#fff;
-  padding:12px;
+  padding:14px;
 }
-.detailTitle{ font-weight:900; font-size:13px; margin:0 0 8px; }
-.detailList{ font-size:12px; color:#111827; line-height:1.45; }
+.detailTitle{ font-weight:700; font-size:13px; margin:0 0 10px; }
+.detailList{ font-size:12px; color:var(--text); line-height:1.55; }
 .detailList .muted{ color:var(--muted); }
 
-.footer{ text-align:center; color:var(--muted); font-size:12px; margin:14px 0 30px; }
+/* Footer */
+.footer{
+  text-align:center;
+  color:var(--muted);
+  font-size:12px;
+  margin:14px 0 30px;
+}
 
 /* Lock */
-.lock{ position:fixed; inset:0; background:rgba(17,24,39,.55); display:flex; align-items:center; justify-content:center; z-index:9999; }
-.lockCard{ width:420px; background:#fff; border-radius:14px; padding:20px; box-shadow:0 12px 30px rgba(0,0,0,.25); border:1px solid var(--line); }
-.lockTitle{ font-weight:900; font-size:16px; margin-bottom:6px; }
-.lockHint{ font-size:12px; color:var(--muted); margin-bottom:12px; line-height:1.35; }
+.lock{
+  position:fixed;
+  inset:0;
+  background:rgba(17,24,39,.55);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+.lockCard{
+  width:min(460px, calc(100% - 28px));
+  background:rgba(255,255,255,.92);
+  border-radius:var(--radius);
+  padding:20px;
+  box-shadow:0 18px 50px rgba(0,0,0,.25);
+  border:1px solid rgba(255,255,255,.40);
+}
+.lockTitle{
+  font-family:Fraunces, serif;
+  font-weight:650;
+  font-size:18px;
+  margin-bottom:6px;
+}
+.lockHint{
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:12px;
+  line-height:1.5;
+}
 .lockRow{ display:flex; gap:10px; }
+.lockRow input{
+  flex:1;
+  min-width:0;
+}
 .lockMsg{ margin-top:10px; font-size:12px; min-height:16px; }
+
+/* Mobile tweaks */
+@media(max-width: 640px){
+  .wrap{ padding:0 14px 34px; }
+  .bar{ padding:12px; }
+  input,select{ min-width: 0; width:100%; }
+  .btn{ width:100%; }
+  .actions{ flex-direction:column; }
+}
 </style>
 </head>
 
 <body>
   <div class="topbar">
-    <div class="brand">CIAC Check-In · Reporte</div>
-    <a href="index.html">🏠 Inicio</a>
+    <div class="topbarInner">
+      <div class="brand">CIAC <small>· Reporte</small></div>
+      <a href="index.html" aria-label="Volver al inicio">🏠 Inicio</a>
+    </div>
   </div>
 
   <div class="wrap">
@@ -186,7 +417,7 @@ tr:hover td{ background:#fcfcfd; }
         <button class="btn btnAlt" id="btnReset">Mes actual</button>
 
         <button class="btn btnWarn" id="btnCSV" title="Exporta sesiones del período">Exportar CSV (sesiones)</button>
-        <button class="btn" id="btnCSVAsist" title="Exporta asistencias del período">Exportar CSV (asistencias)</button>
+        <button class="btn btnAlt" id="btnCSVAsist" title="Exporta asistencias del período">Exportar CSV (asistencias)</button>
       </div>
 
       <div class="muted" id="status">Listo.</div>
@@ -285,7 +516,7 @@ tr:hover td{ background:#fcfcfd; }
         Ingresa la clave para visualizar el reporte. (Esto es una barrera básica visual; no reemplaza Supabase Auth.)
       </p>
       <div class="lockRow">
-        <input id="pass" type="password" placeholder="Clave del reporte" style="flex:1;" />
+        <input id="pass" type="password" placeholder="Clave del reporte" />
         <button class="btn" id="btnEnter">Entrar</button>
       </div>
       <div class="lockMsg" id="lockMsg"></div>
@@ -769,6 +1000,7 @@ function renderTable(list){
   });
 }
 
+/* === tu JS sigue igual desde aquí en adelante === */
 async function toggleDetail(sessionId){
   const det = document.getElementById("detail-"+sessionId);
   const list = document.getElementById("alist-"+sessionId);
@@ -869,12 +1101,9 @@ function drawBarChart(canvas, labels, values, options={}){
   ctx.fillText("0", pad - 6, H - pad);
 }
 
+/* ... el resto de tu JS sigue EXACTO ... */
 function renderCharts(list){
-  // Horas por día (cerradas)
-  const dayMap = new Map(); // yyyy-mm-dd -> hours
-  let minDay = null;
-  let maxDay = null;
-  let daysInPeriod = 0;
+  const dayMap = new Map();
 
   for(const s of list){
     if(!s.termino_en) continue;
@@ -884,7 +1113,6 @@ function renderCharts(list){
     dayMap.set(k, (dayMap.get(k)||0) + h);
   }
 
-  // construir labels por rango (desde/hasta)
   const from = fDesde.value ? new Date(fDesde.value+"T00:00:00") : startOfMonth(new Date());
   const to = fHasta.value ? new Date(fHasta.value+"T00:00:00") : new Date();
   const cur = new Date(from.getTime());
@@ -892,22 +1120,20 @@ function renderCharts(list){
   const vals = [];
   while(cur <= to && labels.length < 400){
     const k = ymd(cur);
-    labels.push(k.slice(5)); // MM-DD
+    labels.push(k.slice(5));
     vals.push(Math.round((dayMap.get(k)||0) * 10)/10);
     cur.setDate(cur.getDate()+1);
   }
-  daysInPeriod = labels.length;
 
   clearCanvas(cDia);
   if(labels.length){
-    const every = daysInPeriod > 24 ? Math.ceil(daysInPeriod / 12) : 2;
+    const every = labels.length > 24 ? Math.ceil(labels.length / 12) : 2;
     drawBarChart(cDia, labels, vals, { showEvery: every });
-    cDiaHint.textContent = `Días en período: ${daysInPeriod}. (Barras = horas reales por día)`;
+    cDiaHint.textContent = `Días en período: ${labels.length}. (Barras = horas reales por día)`;
   }else{
     cDiaHint.textContent = "Sin datos para graficar.";
   }
 
-  // Horas por tutor (top 8)
   const tMap = new Map();
   for(const s of list){
     if(!s.termino_en) continue;
@@ -934,7 +1160,6 @@ function renderCharts(list){
 ========================= */
 btnCSV.onclick = async ()=>{
   try{
-    const { fromLocal, toLocal } = buildRangeISO();
     const nameTutor = (fTutor.value && fTutor.value !== "__ALL__") ? fTutor.value : "todos";
     const nameArea = (fArea.value && fArea.value !== "__ALL__") ? fArea.value : "todas";
     const filename = `reporte_sesiones_${fDesde.value}_${fHasta.value}_${nameTutor}_${nameArea}.csv`;
@@ -975,7 +1200,6 @@ btnCSVAsist.onclick = async ()=>{
     setStatus("Preparando export de asistencias…");
     const { fromISO, toISO } = buildRangeISO();
 
-    // Cargar asistencias de sesiones filtradas
     const asist = await loadAssistancesForRange(fromISO, toISO);
     lastAsistForExport = asist;
 
