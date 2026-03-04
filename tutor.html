@@ -181,11 +181,10 @@ let sessionCreatedAtIso = null;
 
 function setBusy(v){
   busy = v;
-  btnGen.disabled = !!v;
-  // el btnEnd lo controlamos según estado para evitar confusión
-  btnEnd.disabled = !!v || !sessionId || closed;
+  btnGen.disabled = v || false;
+  // Mantén el comportamiento original, pero el cierre controla btnEnd explícitamente.
+  btnEnd.disabled = v || btnEnd.disabled;
 }
-
 function setMsg(text, color="#111827"){
   msg.style.color = color;
   msg.textContent = text;
@@ -195,22 +194,12 @@ function rand10(){
   const r = (crypto?.randomUUID ? crypto.randomUUID().replace(/-/g,'') : (Date.now()+''+Math.random()).replace('.',''));
   return r.slice(0, 10);
 }
-
 function qrUrl(url, size=190){
   return "https://api.qrserver.com/v1/create-qr-code/?size="+size+"x"+size+"&data=" + encodeURIComponent(url);
 }
-
 function renderIn(url){
   qrIn.src = qrUrl(url, 190);
   inLink.textContent = url;
-}
-
-function clearQrUIClosed(){
-  // Mantener diseño: ocultar QR y neutralizar link/token visualmente
-  inbox.style.display = "none";
-  inToken.textContent = "CERRADA";
-  inLink.textContent = "";
-  inTimer.textContent = "Sesión cerrada.";
 }
 
 function saveActiveToLS(payload){
@@ -251,8 +240,8 @@ function loadTutorProfile(){
 
 function setUIForActive(){
   inbox.style.display = "block";
-  summaryBox.style.display = "none";
   btnEnd.disabled = false;
+  summaryBox.style.display = "none";
 }
 
 function resetUIForNew(){
@@ -319,28 +308,31 @@ function showSummary(area, tutorNombre, startIso, endIso){
 }
 
 /**
- * CIERRE 100% CONFIABLE (SIN CORREO)
- * - Valida sesion_id
- * - Deshabilita botón durante proceso
- * - Update: termino_en, token_actual=null (no tocar otros campos)
- * - Si OK: éxito + UI cerrada + limpiar LS y estado QR
- * - Si falla: mensaje claro, NO cambiar UI activa, log en consola
+ * ETAPA 1.1 — CIERRE 100% CONFIABLE, SIN CORREO
+ * Reglas:
+ * - Validar sesion_id
+ * - Deshabilitar botón durante proceso
+ * - Update SOLO: termino_en y token_actual=null
+ * - Si OK: mensaje éxito, UI cerrada, limpiar token/QR local, conservar datos base
+ * - Si falla: mensaje claro, mantener UI activa, log en consola
  */
 async function endMentoria(){
-  // 1) Validar sesion_id
+  // A1) Validar que existe sesión activa
   if (!sessionId) {
     setMsg("No hay una mentoría activa para finalizar.", "crimson");
     return;
   }
   if (busy) return;
 
-  setBusy(true);
-  btnEnd.disabled = true;
-
   const sesion_id = sessionId;
   console.log("[CIAC] Finalizando mentoría", { sesion_id });
 
+  // A2) Deshabilitar botón durante proceso
+  btnEnd.disabled = true;
+  setBusy(true);
+
   try{
+    // A3) Update requerido (NO tocar otros campos)
     const nowIso = new Date().toISOString();
 
     const { data, error } = await db
@@ -354,17 +346,16 @@ async function endMentoria(){
       .single();
 
     if (error) {
+      // A5) Mantener UI activa (no limpiar token, no ocultar QR)
       console.error("[CIAC] Update ERROR", error);
       setMsg("No se pudo finalizar la mentoría. Reintenta.", "crimson");
-
-      // Mantener estado activo: no tocar token/QR, no limpiar LS, no marcar closed
       btnEnd.disabled = false;
       return;
     }
 
     console.log("[CIAC] Update OK", data);
 
-    // 4) Update OK => cerrar estado local/UI
+    // A4) OK: marcar cerrado y cerrar UI
     closed = true;
 
     const saved = readActiveFromLS();
@@ -373,7 +364,7 @@ async function endMentoria(){
     const tutorNombre = (tutorNombreEl.value || "").trim();
     const area = areaEl.value || "";
 
-    // Guardar último cierre (útil para reporte futuro)
+    // Persistir “último cierre” (para reportes)
     saveLastClosedToLS({
       sesion_id: sesion_id,
       campus: saved?.campus,
@@ -387,35 +378,35 @@ async function endMentoria(){
       termino_en: nowIso
     });
 
-    // Limpiar sesión activa del LS (para evitar "recuperar" algo ya cerrado)
+    // Quitar sesión activa para evitar recuperar algo ya cerrado
     clearActiveFromLS();
 
-    // Mensaje éxito
+    // Mensaje éxito (sin email)
     setMsg("✅ Mentoría finalizada. QR deshabilitado.", "green");
 
-    // UI cerrada: ocultar QR / bloquear link / estado visible
-    clearQrUIClosed();
-    btnEnd.disabled = true;
-
-    // Mantener resumen en pantalla (datos base conservados)
-    showSummary(area, tutorNombre, startIso, nowIso);
-
-    // Limpiar variables locales relacionadas a token/qr (sin borrar inputs base)
+    // UI cerrada:
+    // - ocultar QR
+    // - bloquear link
+    // - estado visible “CERRADA”
+    inbox.style.display = "none";
     inToken.textContent = "CERRADA";
     inLink.textContent = "";
-    // Mantener sessionId para no confundir? mejor mantener, pero ya closed=true, btnEnd deshabilitado.
-    // Si prefieres, puedes dejar sessionId (sirve para debug), pero no se usa para reabrir.
+    inTimer.textContent = "Sesión cerrada.";
+    btnEnd.disabled = true;
 
-  }catch(err){
+    // Mantener resumen visible (datos base)
+    showSummary(area, tutorNombre, startIso, nowIso);
+
+  } catch (err) {
     console.error("[CIAC] Update ERROR", err);
     setMsg("No se pudo finalizar la mentoría. Reintenta.", "crimson");
-    // Mantener UI activa (no cambiar closed)
-    closed = false;
+    // mantener UI activa
     btnEnd.disabled = false;
-  }finally{
+  } finally {
+    // C) Asegurar que el botón queda en estado consistente
     setBusy(false);
-    // Si quedó cerrada, mantener deshabilitado; si no, re-habilitar
-    btnEnd.disabled = closed || !sessionId;
+    // si quedó cerrada, permanece disabled; si no, se habilita
+    btnEnd.disabled = closed ? true : false;
   }
 }
 
@@ -446,8 +437,11 @@ async function recoverIfPossible(){
 
     setMsg("ℹ️ Esta sesión ya estaba finalizada.", "#111827");
 
-    // UI cerrada confiable
-    clearQrUIClosed();
+    // UI cerrada
+    inbox.style.display = "none";
+    inToken.textContent = "CERRADA";
+    inLink.textContent = "";
+    inTimer.textContent = "Sesión cerrada.";
     btnEnd.disabled = true;
 
     const tutorNombre = (tutorNombreEl.value || "").trim();
