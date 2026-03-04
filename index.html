@@ -27,14 +27,14 @@
       gap:12px;
     }
     .brand{
-      font-weight:800;
+      font-weight:900;
       letter-spacing:.3px;
       display:flex;
       align-items:center;
       gap:10px;
     }
     .pill{
-      font-weight:700;
+      font-weight:800;
       font-size:12px;
       background:rgba(255,255,255,.15);
       padding:6px 10px;
@@ -52,14 +52,28 @@
       padding:18px;
     }
 
-    h1{ margin:0 0 8px; font-size:22px; }
-    p{ margin:0; color:var(--muted); line-height:1.4; }
+    .hero{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding:18px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:linear-gradient(180deg, rgba(31,74,141,.06), rgba(255,255,255,1));
+    }
+    .heroTitle{ margin:0; font-size:22px; font-weight:900; letter-spacing:.2px; }
+    .heroText{ margin:0; color:var(--muted); line-height:1.45; font-size:13px; }
+
+    .divider{
+      height:1px;
+      background:var(--line);
+      margin:16px 0;
+    }
 
     .steps{
       display:grid;
       grid-template-columns:1fr;
       gap:12px;
-      margin-top:14px;
     }
     @media (min-width: 900px){
       .steps{ grid-template-columns: 1fr 1fr 1fr; }
@@ -73,13 +87,15 @@
       display:flex;
       flex-direction:column;
       gap:10px;
-      min-height: 180px;
+      min-height: 190px;
     }
+
     .stepTop{
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       gap:10px;
     }
+
     .badge{
       width:34px; height:34px;
       border-radius:12px;
@@ -91,16 +107,19 @@
       font-weight:900;
       flex:0 0 auto;
     }
+
     .stepTitle{
       font-weight:900;
       margin:0;
       font-size:14px;
+      letter-spacing:.2px;
     }
+
     .stepDesc{
-      margin:0;
+      margin:6px 0 0;
       color:var(--muted);
       font-size:13px;
-      line-height:1.35;
+      line-height:1.38;
     }
 
     .btnRow{
@@ -109,6 +128,7 @@
       flex-wrap:wrap;
       margin-top:auto;
     }
+
     .btn{
       border:0;
       border-radius:10px;
@@ -120,7 +140,9 @@
       display:inline-flex;
       align-items:center;
       gap:8px;
+      box-sizing:border-box;
     }
+
     .btnPrimary{ background:var(--cta); color:#111827; }
     .btnBlue{ background:var(--blue); color:#fff; }
     .btnGhost{ background:#fff; border:1px solid var(--line); color:#111827; }
@@ -139,38 +161,42 @@
     <div>
       <div class="brand">
         <span>CIAC</span>
-        <span style="font-weight:600; opacity:.92;">CIAC Check-In</span>
-        <span class="pill">Sistema</span>
+        <span style="font-weight:700; opacity:.92;">Check-In</span>
+        <span class="pill">Inicio</span>
       </div>
-      <div class="crumb">🏠 Inicio</div>
+      <div class="crumb">Inicio</div>
     </div>
 
     <a class="btn btnGhost" href="reporte.html" style="background:rgba(255,255,255,.95);">
-      🔒 Reporte
+      Reporte
     </a>
   </div>
 
   <div class="wrap">
     <div class="card">
-      <h1>Sistema de marcaje CIAC</h1>
-      <p>
-        El tutor crea una sesión con <b>código/QR temporal</b>, los estudiantes registran asistencia con su <b>correo USM</b>
-        y el módulo de <b>reporte</b> consolida los registros para seguimiento.
-      </p>
+      <div class="hero">
+        <h1 class="heroTitle">Sistema de marcaje CIAC</h1>
+        <p class="heroText">
+          El tutor crea una sesión con código temporal, los estudiantes registran asistencia con correo institucional USM
+          y el módulo de reporte consolida los registros para seguimiento.
+        </p>
+      </div>
+
+      <div class="divider"></div>
 
       <div class="steps">
         <div class="step">
           <div class="stepTop">
             <div class="badge">1</div>
             <div>
-              <div class="stepTitle">Crear sesión (Tutor)</div>
+              <div class="stepTitle">Crear sesión</div>
               <p class="stepDesc">Genera un código de 6 dígitos y un QR válido por 10 minutos.</p>
             </div>
           </div>
 
           <div class="btnRow">
-            <a class="btn btnPrimary" href="tutor.html">🧑‍🏫 Ir a Tutor</a>
-            <a class="btn btnGhost" href="tutor.html" target="_blank">↗ Nueva pestaña</a>
+            <a class="btn btnPrimary" href="tutor.html">Ir a Tutor</a>
+            <a class="btn btnGhost" href="tutor.html" target="_blank" rel="noopener">Nueva pestaña</a>
           </div>
         </div>
 
@@ -178,14 +204,14 @@
           <div class="stepTop">
             <div class="badge">2</div>
             <div>
-              <div class="stepTitle">Marcar asistencia (Alumno)</div>
+              <div class="stepTitle">Marcar asistencia</div>
               <p class="stepDesc">Escanea el QR o ingresa el código y tu correo institucional.</p>
             </div>
           </div>
 
           <div class="btnRow">
-            <a class="btn btnBlue" href="checkin.html">✅ Ir a Check-in</a>
-            <a class="btn btnGhost" href="checkin.html" target="_blank">↗ Nueva pestaña</a>
+            <a class="btn btnBlue" href="checkin.html">Ir a Check-in</a>
+            <a class="btn btnGhost" href="checkin.html" target="_blank" rel="noopener">Nueva pestaña</a>
           </div>
         </div>
 
@@ -193,14 +219,14 @@
           <div class="stepTop">
             <div class="badge">3</div>
             <div>
-              <div class="stepTitle">Revisar registros (Reporte)</div>
+              <div class="stepTitle">Revisar registros</div>
               <p class="stepDesc">Acceso restringido con clave para visualizar y filtrar asistencia.</p>
             </div>
           </div>
 
           <div class="btnRow">
-            <a class="btn btnBlue" href="reporte.html">🔒 Ir a Reporte</a>
-            <a class="btn btnGhost" href="reporte.html" target="_blank">↗ Nueva pestaña</a>
+            <a class="btn btnBlue" href="reporte.html">Ir a Reporte</a>
+            <a class="btn btnGhost" href="reporte.html" target="_blank" rel="noopener">Nueva pestaña</a>
           </div>
         </div>
       </div>
