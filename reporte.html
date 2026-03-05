@@ -36,6 +36,9 @@ input,select{padding:12px;border:1px solid rgba(17,24,39,.10);border-radius:14px
 .btn:disabled{opacity:.55;cursor:not-allowed}
 .btnGhost{background:rgba(94,134,199,.10);color:var(--text);border:1px solid rgba(94,134,199,.18)}
 .btnGood{background:linear-gradient(135deg, rgba(17,24,39,0.92), rgba(17,24,39,0.78));color:#fff}
+.quickChips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.quickChip{padding:8px 10px;border-radius:999px;border:1px solid rgba(94,134,199,.18);background:#fff;color:var(--text);font-size:12px;font-weight:800;cursor:pointer}
+.quickChip.active{background:rgba(94,134,199,.14)}
 .pill{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid var(--line);background:#f9fafb}
 
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
@@ -119,7 +122,13 @@ td .muted{font-size:11px}
           <option value="rango">Rango</option>
           <option value="hoy">Hoy</option>
           <option value="semana">Esta semana</option>
+          <option value="30dias">Últimos 30 días</option>
         </select>
+        <div class="quickChips" id="quickChips">
+          <button class="quickChip" data-quick="hoy" type="button">Hoy</button>
+          <button class="quickChip" data-quick="semana" type="button">Esta semana</button>
+          <button class="quickChip" data-quick="30dias" type="button">Últimos 30 días</button>
+        </div>
 
         <label>Rango de fechas</label>
         <div class="row">
@@ -156,6 +165,10 @@ td .muted{font-size:11px}
           <button class="btn" id="btnFiltrar">Aplicar</button>
           <button class="btn btnGhost" id="btnLimpiar">Limpiar</button>
           <button class="btn btnGood" id="btnCSV">Descargar CSV</button>
+          <select id="csvSep" class="small" aria-label="Separador CSV">
+            <option value=";" selected>CSV con ; (Excel ES)</option>
+            <option value=",">CSV con ,</option>
+          </select>
         </div>
 
         <div class="muted" style="margin-top:10px;" id="status">—</div>
@@ -307,6 +320,8 @@ const statusEl=document.getElementById("status");
 const genAtEl=document.getElementById("genAt");
 
 const quickDateEl=document.getElementById("quickDate");
+const quickChipsEl=document.getElementById("quickChips");
+const csvSepEl=document.getElementById("csvSep");
 const desdeEl=document.getElementById("desde");
 const hastaEl=document.getElementById("hasta");
 const selCampusEl=document.getElementById("selCampus");
@@ -437,6 +452,23 @@ function setWeekRange(){
   hastaEl.value=fmt(sun);
 }
 
+
+function setLast30DaysRange(){
+  const end=new Date();
+  const start=new Date();
+  start.setDate(end.getDate()-29);
+  const fmt=(d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  desdeEl.value=fmt(start);
+  hastaEl.value=fmt(end);
+}
+
+function syncQuickChips(){
+  if(!quickChipsEl) return;
+  const current=quickDateEl.value;
+  quickChipsEl.querySelectorAll(".quickChip").forEach((b)=>{
+    b.classList.toggle("active", b.dataset.quick===current);
+  });
+}
 function initDefaults(){
   const now=new Date();
   genAtEl.textContent="Generado: "+now.toLocaleString("es-CL",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});
@@ -445,20 +477,21 @@ function initDefaults(){
   desdeEl.value=first.toISOString().slice(0,10);
   hastaEl.value=last.toISOString().slice(0,10);
   quickDateEl.value="rango";
+  syncQuickChips();
 }
 
-function escapeCSVValue(v){
-  const s=String(v ?? "");
-  if (/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
-  return s;
+function escapeCSVValue(v, sep=","){
+  const raw=String(v ?? "").replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+  if (raw.includes('"') || raw.includes("\n") || raw.includes(sep)) return `"${raw.replace(/"/g,'""')}"`;
+  return raw;
 }
 
-function downloadCSVFile(filename, headerCols, rows){
-  const bom="\ufeff";
+function downloadCSVFile(filename, headerCols, rows, sep=";"){
+  const bom="﻿";
   const lines=[];
-  lines.push(headerCols.map(escapeCSVValue).join(","));
+  lines.push(headerCols.map((v)=>escapeCSVValue(v, sep)).join(sep));
   for(const r of rows){
-    lines.push(r.map(escapeCSVValue).join(","));
+    lines.push(r.map((v)=>escapeCSVValue(v, sep)).join(sep));
   }
   const csv=bom + lines.join("\n");
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
@@ -886,6 +919,7 @@ async function loadFilterLists(){
 function buildFilters(){
   const filtros={
     quickDate: quickDateEl.value,
+    csvSep: (csvSepEl?.value || ";"),
     desde: desdeEl.value || "",
     hasta: hastaEl.value || "",
     campus: selCampusEl.value || "",
@@ -1184,7 +1218,7 @@ function exportGeneralCSV(){
     r.participantes
   ]);
 
-  downloadCSVFile(filename, header, rows);
+  downloadCSVFile(filename, header, rows, (csvSepEl?.value || ";"));
 }
 
 function exportSessionCSV(){
@@ -1202,7 +1236,7 @@ function exportSessionCSV(){
     p.correo_alumno ?? ""
   ]);
 
-  downloadCSVFile(filename, header, rows);
+  downloadCSVFile(filename, header, rows, (csvSepEl?.value || ";"));
 }
 
 rowsEl.addEventListener("click",(e)=>{
@@ -1232,7 +1266,7 @@ btnCSV.onclick=async ()=>{
   }
 };
 
-btnFiltrar.onclick=()=>cargar;
+btnFiltrar.onclick=()=>cargar();
 
 btnLimpiar.onclick=async ()=>{
   qEl.value="";
@@ -1241,6 +1275,7 @@ btnLimpiar.onclick=async ()=>{
   selCampusEl.value="";
   selEstadoEl.value="";
   quickDateEl.value="rango";
+  syncQuickChips();
   initDefaults();
   await cargar();
 };
@@ -1249,8 +1284,23 @@ quickDateEl.addEventListener("change", async ()=>{
   const v=quickDateEl.value;
   if(v==="hoy") setTodayRange();
   if(v==="semana") setWeekRange();
+  if(v==="30dias") setLast30DaysRange();
+  syncQuickChips();
   await cargar();
 });
+
+if(quickChipsEl){
+  quickChipsEl.addEventListener("click", async (e)=>{
+    const chip=e.target.closest(".quickChip");
+    if(!chip) return;
+    quickDateEl.value=chip.dataset.quick || "rango";
+    if(quickDateEl.value==="hoy") setTodayRange();
+    if(quickDateEl.value==="semana") setWeekRange();
+    if(quickDateEl.value==="30dias") setLast30DaysRange();
+    syncQuickChips();
+    await cargar();
+  });
+}
 
 function resizeCharts(){
   const fit=(c)=>{

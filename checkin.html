@@ -24,14 +24,18 @@
     .hero{padding:18px;max-width:600px;margin:0 auto}
     .hero h1{margin:0;font-family:Fraunces,serif;font-size:32px;line-height:1.08}
     .hero p{margin:8px 0 0;color:var(--muted);font-size:14px}
-    .card{max-width:600px;margin:16px auto 0;padding:18px}
+    .card{max-width:600px;margin:16px auto 0;padding:20px}
     label{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-top:10px}
-    input{width:100%;margin-top:6px;padding:14px;border-radius:14px;border:1px solid rgba(17,24,39,.10);background:rgba(234,242,251,.35)}
+    input{width:100%;margin-top:6px;padding:16px;border-radius:14px;border:1px solid rgba(17,24,39,.10);background:rgba(234,242,251,.35);font-size:16px}
     input:focus{outline:none;border-color:rgba(94,134,199,.55);box-shadow:0 0 0 4px rgba(94,134,199,.14);background:#fff}
-    button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:14px;font-weight:900;cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--primary),var(--primarySoft));box-shadow:0 14px 30px rgba(240,108,108,.22)}
-    .msg,.msgAlert{margin-top:12px;font-size:13px;min-height:18px;padding:10px 12px;border-radius:14px;background:rgba(234,242,251,.35);border:1px dashed rgba(17,24,39,.10)}
+    button{width:100%;margin-top:14px;padding:16px;border:0;border-radius:14px;font-weight:900;cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--primary),var(--primarySoft));box-shadow:0 14px 30px rgba(240,108,108,.22);font-size:16px}
+    .msg,.msgAlert{margin-top:12px;font-size:13px;min-height:18px;padding:12px;border-radius:14px;background:rgba(234,242,251,.35);border:1px dashed rgba(17,24,39,.10)}
+    .msg.ok{color:#0f5132;background:rgba(79,191,158,.12);border:1px solid rgba(79,191,158,.35)}
+    .msg.err{color:#b42318;background:rgba(240,108,108,.12);border:1px solid rgba(240,108,108,.35)}
+    .msg.info{color:#1f3b70;background:rgba(94,134,199,.12);border:1px solid rgba(94,134,199,.35)}
     .hint{margin-top:12px;padding:12px;border-radius:14px;background:rgba(94,134,199,.10);border:1px solid rgba(94,134,199,.18);font-size:12px;color:var(--text)}
     .hide{display:none}.heroImg{width:100%;max-height:180px;object-fit:cover;border-radius:14px;border:1px solid rgba(17,24,39,.06);margin:10px 0 12px;background:#fff}
+    @media (max-width:700px){.page{padding:14px 12px 24px}.hero,.card{border-radius:16px}.hero h1{font-size:28px}}
   </style>
 </head>
 <body>
@@ -62,10 +66,29 @@ const correoEl = document.getElementById("correo");
 const tokenEl = document.getElementById("token");
 const tokenWrap = document.getElementById("tokenWrap");
 const btn = document.getElementById("btn");
+const BTN_IDLE_TEXT = "Registrar";
+const BTN_BUSY_TEXT = "Registrando…";
+const LS_LAST_BY_EMAIL = "ciac_checkin_last_name_by_email";
 
-function setStatus(text, color="#111827"){
-  msg.style.color = color;
+function getStoredNames(){
+  try { return JSON.parse(localStorage.getItem(LS_LAST_BY_EMAIL) || "{}"); } catch { return {}; }
+}
+function saveStoredName(correo, nombre){
+  if (!correo || !nombre) return;
+  const dbNames = getStoredNames();
+  dbNames[correo] = nombre;
+  localStorage.setItem(LS_LAST_BY_EMAIL, JSON.stringify(dbNames));
+}
+
+function setStatus(text, kind="info"){
+  msg.classList.remove("ok", "err", "info");
+  msg.classList.add(kind);
   msg.textContent = text;
+}
+
+function setSubmitting(isBusy){
+  btn.disabled = !!isBusy;
+  btn.textContent = isBusy ? BTN_BUSY_TEXT : BTN_IDLE_TEXT;
 }
 
 // Token desde querystring (QR)
@@ -76,34 +99,44 @@ if (qpToken) {
   tokenWrap.classList.add("hide");
 }
 
+correoEl.addEventListener("input", ()=>{
+  const correo = (correoEl.value || "").trim().toLowerCase();
+  if (!correo.endsWith("@usm.cl")) return;
+  const stored = getStoredNames()[correo];
+  if (stored && !nombreEl.value.trim()) {
+    nombreEl.value = stored;
+    setStatus("Sugerencia aplicada: se recuperó tu nombre guardado para este correo.", "info");
+  }
+});
+
 async function doCheckin(){
   console.log("Iniciando check-in");
 
   // Evitar doble envío
-  btn.disabled = true;
-  setStatus("Validando…");
+  setSubmitting(true);
+  setStatus("Validando…", "info");
 
   const nombre_completo = (nombreEl.value || "").trim();
   const correo = (correoEl.value || "").trim().toLowerCase();
   const token = (tokenEl.value || "").trim();
 
   if (!nombre_completo) {
-    setStatus("Completa tu nombre y apellido.", "crimson");
-    btn.disabled = false;
+    setStatus("Completa tu nombre y apellido.", "err");
+    setSubmitting(false);
     return;
   }
 
   // Validación correo @usm.cl
   if (!correo.endsWith("@usm.cl")) {
-    setStatus("Debes ingresar tu correo institucional @usm.cl", "crimson");
-    btn.disabled = false;
+    setStatus("Debes ingresar tu correo institucional @usm.cl", "err");
+    setSubmitting(false);
     return;
   }
 
   // Token obligatorio (si no viene, QR inválido)
   if (!token) {
-    setStatus("QR inválido o sesión no disponible.", "crimson");
-    btn.disabled = false;
+    setStatus("Token inválido / sesión no encontrada.", "err");
+    setSubmitting(false);
     return;
   }
 
@@ -113,8 +146,8 @@ async function doCheckin(){
 
   if (e1) {
     console.error("Error asistencia:", e1);
-    setStatus("Error: " + e1.message, "crimson");
-    btn.disabled = false;
+    setStatus("Error de red / reintento.", "err");
+    setSubmitting(false);
     return;
   }
 
@@ -123,15 +156,15 @@ async function doCheckin(){
 
   // QR inválido si no hay sesión
   if (!sesion) {
-    setStatus("QR inválido o sesión no disponible.", "crimson");
-    btn.disabled = false;
+    setStatus("Token inválido / sesión no encontrada.", "err");
+    setSubmitting(false);
     return;
   }
 
   // Sesión cerrada si termino_en no es null o token_actual es null
   if (sesion.termino_en || sesion.token_actual === null) {
-    setStatus("La mentoría ya fue finalizada. No se pueden registrar más asistencias.", "crimson");
-    btn.disabled = false;
+    setStatus("Sesión cerrada (o QR deshabilitado).", "err");
+    setSubmitting(false);
     return;
   }
 
@@ -149,24 +182,24 @@ async function doCheckin(){
     const m = (e2.message || "").toLowerCase();
     const code = (e2.code || "");
     if (code === "23505" || m.includes("duplicate") || m.includes("unique")) {
-      setStatus("Ya estás registrado en esta mentoría.", "crimson");
-      btn.disabled = false;
+      setStatus("Ya estás registrado en esta tutoría.", "err");
+      setSubmitting(false);
       return;
     }
-    setStatus("Error: " + e2.message, "crimson");
-    btn.disabled = false;
+    setStatus("Error de red / reintento.", "err");
+    setSubmitting(false);
     return;
   }
 
   console.log("Insert asistencia OK");
-  setStatus("Asistencia registrada correctamente.", "green");
+  setStatus("Asistencia registrada correctamente.", "ok");
+  saveStoredName(correo, nombre_completo);
 
-  // Limpiar campos y foco a correo (celular compartido)
+  // Limpiar nombre y mantener correo para reducir fricción en sala
   nombreEl.value = "";
-  correoEl.value = "";
-  correoEl.focus();
+  nombreEl.focus();
 
-  btn.disabled = false;
+  setSubmitting(false);
 }
 
 btn.addEventListener("click", doCheckin);
