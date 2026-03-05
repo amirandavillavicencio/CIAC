@@ -4,13 +4,14 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>DATA-E · Apoyos 2025 · Dashboard</title>
+  <link rel="icon" href="data:,">
 
   <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Inter font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Plotly -->
   <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
@@ -20,24 +21,25 @@
   <script src="https://unpkg.com/tabulator-tables@6.2.5/dist/js/tabulator.min.js"></script>
 
   <style>
-    :root { --blue:#0047AB; --gray:#6c757d; --amber:#ffc107; --bg:#f8f9fa; --card:#ffffff; --line: rgba(0,0,0,.08); }
-    html, body { background: var(--bg); font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:#111827; }
+    :root{--bg:#EAF2FB;--card:#FFFFFF;--primary:#F06C6C;--primarySoft:#F4A6A6;--blue:#5E86C7;--success:#4FBF9E;--text:#111827;--muted:#6B7280;--line: rgba(17,24,39,0.10);--shadow: 0 18px 40px rgba(17,24,39,0.10);--radius: 18px; --gray:#6c757d; --amber:#ffc107;}
+    html, body { background: radial-gradient(1200px 600px at 10% 0%, rgba(94,134,199,0.18), rgba(234,242,251,0) 60%), radial-gradient(900px 500px at 90% 10%, rgba(240,108,108,0.18), rgba(234,242,251,0) 55%), var(--bg); font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:var(--text); }
     .wrap { padding:20px; max-width:1280px; margin:0 auto; }
-    .topbar { background: var(--blue); color:#fff; border-radius:14px; padding:14px 16px; box-shadow:0 10px 22px rgba(0,0,0,.10); }
-    .brand { font-weight:800; letter-spacing:.2px; display:flex; align-items:center; gap:10px; }
-    .pill { background: rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.18); padding:6px 10px; border-radius:999px; font-size:12px; white-space:nowrap; }
-    .tabs { margin-top:15px; background:#fff; border-radius:14px; padding:10px 12px; border:1px solid var(--line); box-shadow:0 8px 18px rgba(0,0,0,.06); }
+    .topbar { background: rgba(255,255,255,.72); backdrop-filter:blur(10px); color:var(--text); border-radius:18px; padding:14px 16px; box-shadow:var(--shadow); border:1px solid rgba(17,24,39,.06); }
+    .brand { font-weight:800; letter-spacing:.2px; display:flex; align-items:center; gap:10px; } .brand > div > div:first-child{font-family:Fraunces,serif;}
+    .pill { background: rgba(94,134,199,.10); border:1px solid rgba(94,134,199,.18); padding:6px 10px; border-radius:999px; font-size:12px; white-space:nowrap; color:var(--text); }
+    .tabs { margin-top:15px; background:#fff; border-radius:18px; padding:10px 12px; border:1px solid rgba(17,24,39,.06); box-shadow:var(--shadow); }
     .nav-pills .nav-link { border-radius:12px; font-weight:800; color:#0f172a; }
     .nav-pills .nav-link.active { background: rgba(0,71,171,.12); color: var(--blue); border:1px solid rgba(0,71,171,.20); }
     .grid { margin-top:15px; display:grid; gap:15px; }
     @media (min-width: 992px){ .grid.cols-2{ grid-template-columns:1fr 1fr; } .grid.cols-3{ grid-template-columns:1fr 1fr 1fr; } }
-    .cardx { background: var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:0 8px 18px rgba(0,0,0,.06); }
+    .cardx { background: var(--card); border:1px solid rgba(17,24,39,.06); border-radius:18px; padding:14px; box-shadow:var(--shadow); }
     .cardx h5 { margin:0 0 10px 0; font-weight:900; color:#0f172a; font-size:14px; letter-spacing:.2px; text-transform:uppercase; }
     .kpi { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
     .kpi .value { font-size:28px; font-weight:900; line-height:1.1; color:#0b1b3a; }
     .kpi .label { color: var(--gray); font-weight:600; font-size:12px; margin-top:6px; }
-    .kpi .icon { width:42px; height:42px; border-radius:12px; background: rgba(0,71,171,.12); display:flex; align-items:center; justify-content:center; border:1px solid rgba(0,71,171,.18); flex:0 0 auto; }
+    .kpi .icon { width:42px; height:42px; border-radius:12px; background: rgba(94,134,199,.12); display:flex; align-items:center; justify-content:center; border:1px solid rgba(94,134,199,.18); flex:0 0 auto; }
     .kpi svg { width:22px; height:22px; fill: var(--blue); }
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primarySoft));border:none}
     .muted { color: var(--gray); font-size:12px; font-weight:600; }
     .plot { width:100%; height:360px; }
     .plot.tall { height:440px; }
