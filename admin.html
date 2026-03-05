@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CIAC · Administrativo</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#EAF2FB;--card:#FFFFFF;--primary:#F06C6C;--primarySoft:#F4A6A6;--blue:#5E86C7;--success:#4FBF9E;--text:#111827;--muted:#6B7280;--line: rgba(17,24,39,0.10);--shadow: 0 18px 40px rgba(17,24,39,0.10);--radius: 18px;}
+*{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,sans-serif;background:radial-gradient(1200px 600px at 10% 0%, rgba(94,134,199,.18), rgba(234,242,251,0) 60%),radial-gradient(900px 500px at 90% 10%, rgba(240,108,108,.18), rgba(234,242,251,0) 55%),var(--bg);color:var(--text)}
+.topbar{position:sticky;top:0;background:rgba(255,255,255,.72);backdrop-filter:blur(10px);border-bottom:1px solid rgba(17,24,39,.06)}
+.topbarInner{max-width:1040px;margin:0 auto;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+.brand{display:flex;gap:10px;align-items:center}.brand img{width:34px;height:34px;border-radius:12px;background:#fff;padding:4px;border:1px solid rgba(17,24,39,.08)}
+.brandText .t{font-family:Fraunces,serif;font-size:16px}.brandText .s{font-size:12px;color:var(--muted);font-weight:600}
+.topbar a{text-decoration:none;font-weight:800;color:var(--text);background:rgba(94,134,199,.1);border:1px solid rgba(94,134,199,.18);padding:10px 12px;border-radius:14px}
+.page{max-width:1040px;margin:0 auto;padding:18px 16px 32px}.card{background:#fff;border:1px solid rgba(17,24,39,.06);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.fieldRow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:block;font-size:12px;color:var(--muted);margin-top:10px;font-weight:700}
+input,select{width:100%;margin-top:6px;padding:12px;border-radius:14px;border:1px solid rgba(17,24,39,.10);background:rgba(234,242,251,.35)}
+.btnRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.btn{padding:12px;border:0;border-radius:14px;font-weight:900;cursor:pointer}.btnPrimary{background:linear-gradient(135deg,var(--primary),var(--primarySoft));color:#fff}.btnDark{background:linear-gradient(135deg, rgba(17,24,39,.92), rgba(17,24,39,.78));color:#fff}.btnBlue{background:rgba(94,134,199,.12);border:1px solid rgba(94,134,199,.2)}
+.msg{margin-top:10px;font-size:13px;padding:10px;border-radius:14px;background:rgba(234,242,251,.35);border:1px dashed rgba(17,24,39,.1);min-height:18px}
+.heroTitle{font-family:Fraunces,serif;font-size:32px;margin:0}.heroSub{color:var(--muted);font-size:14px}
+.qrRow{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.qrRow img{width:190px;height:190px;border-radius:16px;border:1px solid rgba(17,24,39,.08);background:#fff;padding:10px}
+.kpiRow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}.kpi{border:1px solid var(--line);border-radius:14px;padding:10px;background:#fff}.kpi .k{font-size:11px;color:var(--muted)}.kpi .v{font-size:18px;font-weight:900}
+.sessionPill{display:inline-flex;padding:8px 10px;border-radius:999px;background:rgba(94,134,199,.1);border:1px solid rgba(94,134,199,.18);font-size:12px;font-weight:900}
+@media(max-width:900px){.grid,.fieldRow,.kpiRow{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<!-- SQL sugerido (NO ejecutar aquí)
+CREATE TABLE IF NOT EXISTS public.turnos_admin (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  campus text,
+  lugar text,
+  admin_correo text NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  expira_en timestamptz,
+  termino_en timestamptz,
+  codigo6 text,
+  token_actual text,
+  token_expira_en timestamptz
+);
+
+CREATE TABLE IF NOT EXISTS public.marcaciones_admin (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  turno_id uuid REFERENCES public.turnos_admin(id) ON DELETE CASCADE,
+  admin_correo text NOT NULL,
+  tipo_marcacion text CHECK (tipo_marcacion IN ('ENTRADA','SALIDA')),
+  created_at timestamptz DEFAULT now()
+);
+-->
+<div class="topbar"><div class="topbarInner"><div class="brand"><img src="logonuevociac.png" alt="logo"><div class="brandText"><div class="t">CIAC</div><div class="s">Administrativo · Jornada QR</div></div></div><a href="index.html">Inicio</a></div></div>
+<main class="page">
+<section id="loginPanel" class="card" style="max-width:560px;margin:0 auto;">
+<h1 class="heroTitle" style="font-size:30px;">Acceso administrativo</h1>
+<p class="heroSub">Ingresa con tu usuario validado por RPC y rol admin.</p>
+<label>Usuario</label><input id="loginUser" placeholder="RUT sin guion">
+<label>Contraseña</label><input id="loginPass" type="password" placeholder="Contraseña">
+<div class="btnRow"><button id="btnLogin" class="btn btnPrimary">Iniciar sesión</button></div>
+<div id="loginMsg" class="msg"></div>
+</section>
+<section id="adminPanel" style="display:none;">
+<div class="card">
+<h1 class="heroTitle">Turno administrativo</h1>
+<p class="heroSub">Registro de entrada/salida por QR (independiente de tutorías).</p>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;"><div id="sessionInfo" class="sessionPill">Sesión: —</div><button id="btnLogout" class="btn btnBlue">Cerrar sesión</button></div>
+<div class="fieldRow">
+<div><label>Campus</label><select id="campus"><option>Casa Central</option><option>San Joaquín</option><option selected>Vitacura</option></select></div>
+<div><label>Lugar (opcional)</label><input id="lugar" placeholder="Ej: CIAC - Oficina"></div>
+</div>
+<div class="btnRow"><button id="btnStart" class="btn btnPrimary">Iniciar turno</button><button id="btnFinish" class="btn btnDark">Finalizar turno</button></div>
+<div id="turnoMsg" class="msg"></div>
+<div id="qrWrap" style="display:none;margin-top:12px;">
+<div class="qrRow"><img id="qrImg" alt="QR turno"><div><div style="font-size:12px;color:#6B7280;font-weight:700;">Token</div><div id="tokenTxt" style="font-size:20px;font-weight:900;"></div><div style="font-size:12px;color:#6B7280;margin-top:8px;">Link</div><a id="checkinLink" target="_blank" rel="noopener"></a><div style="margin-top:8px;font-size:12px;">Estado: <b id="turnoEstado">Turno activo</b></div></div></div>
+<div class="kpiRow"><div class="kpi"><div class="k">Marcaciones ENTRADA</div><div class="v" id="kEntrada">0</div></div><div class="kpi"><div class="k">Marcaciones SALIDA</div><div class="v" id="kSalida">0</div></div><div class="kpi"><div class="k">Última actualización</div><div class="v" id="kUpd" style="font-size:13px;">—</div></div></div>
+</div>
+</div>
+</section>
+</main>
+<script>
+const SUPABASE_URL="https://eepukfxexzawbvlroihd.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const LS_KEY="ciac_admin_session_v1";
+let activeTurno=null;
+let pollingId=null;
+
+const $=(id)=>document.getElementById(id);
+const loginPanel=$("loginPanel"),adminPanel=$("adminPanel");
+function norm(v){return (v||"").trim().toUpperCase();}
+function msg(el,t,c){el.textContent=t||"";el.style.color=c||"#111827";}
+function saveSession(rut){localStorage.setItem(LS_KEY,JSON.stringify({rut,exp:Date.now()+12*3600000}));}
+function readSession(){try{const s=JSON.parse(localStorage.getItem(LS_KEY)||"null");if(!s||!s.rut||Date.now()>s.exp){localStorage.removeItem(LS_KEY);return null;}return s;}catch{return null;}}
+function logout(){localStorage.removeItem(LS_KEY);activeTurno=null;if(pollingId){clearInterval(pollingId);pollingId=null;}adminPanel.style.display="none";loginPanel.style.display="block";}
+
+async function checkRole(rut){
+  const {data,error}=await db.from("tutores_login").select("rol").eq("rut",rut).maybeSingle();
+  if(error) throw error;
+  return (data?.rol||"").toLowerCase()==="admin";
+}
+
+async function doLogin(){
+  const u=norm($("loginUser").value); const p=$("loginPass").value||"";
+  if(!u||!p){msg($("loginMsg"),"Completa usuario y contraseña","crimson");return;}
+  msg($("loginMsg"),"Validando...");
+  const {data,error}=await db.rpc("validar_tutor",{p_rut:u,p_password:p});
+  if(error){msg($("loginMsg"),"Error de validación","crimson");return;}
+  const row=Array.isArray(data)?data[0]:data;
+  if(!row?.ok){msg($("loginMsg"),"Usuario o contraseña incorrectos","crimson");return;}
+  const isAdmin=await checkRole(row.rut||u).catch(()=>false);
+  if(!isAdmin){msg($("loginMsg"),"No autorizado","crimson");return;}
+  saveSession(row.rut||u);
+  $("sessionInfo").textContent=`Sesión: ${row.rut||u}`;
+  loginPanel.style.display="none";adminPanel.style.display="block";msg($("loginMsg"),"");
+  await restoreTurno();
+}
+
+function randToken(){return (crypto.randomUUID?crypto.randomUUID().replace(/-/g,""):String(Date.now())+Math.random().toString(36).slice(2)).slice(0,32);}
+function qrUrl(url){return "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data="+encodeURIComponent(url);}
+function fmt(iso){if(!iso) return "—";const d=new Date(iso);return isNaN(d)?iso:d.toLocaleString("es-CL",{hour12:false});}
+
+async function restoreTurno(){
+  const sess=readSession(); if(!sess) return;
+  const {data,error}=await db.from("turnos_admin").select("*").eq("admin_correo",sess.rut).is("termino_en",null).order("created_at",{ascending:false}).limit(1);
+  if(error) return;
+  activeTurno=(data&&data[0])?data[0]:null;
+  if(activeTurno) renderTurno(activeTurno);
+}
+
+function renderTurno(t){
+  const base=`${location.origin}${location.pathname.replace(/[^/]+$/,"")}admin_checkin.html`;
+  const link=`${base}?token=${encodeURIComponent(t.token_actual||"")}`;
+  $("qrWrap").style.display="block";
+  $("qrImg").src=qrUrl(link);
+  $("tokenTxt").textContent=t.token_actual||"—";
+  $("checkinLink").href=link; $("checkinLink").textContent=link;
+  $("turnoEstado").textContent=t.termino_en?"Turno cerrado":"Turno activo";
+  refreshMarcaciones();
+  if(!pollingId){pollingId=setInterval(refreshMarcaciones,8000);}
+}
+
+async function refreshMarcaciones(){
+  if(!activeTurno?.id) return;
+  const {data,error}=await db.from("marcaciones_admin").select("tipo_marcacion,created_at").eq("turno_id",activeTurno.id);
+  if(error) return;
+  const en=(data||[]).filter(r=>r.tipo_marcacion==="ENTRADA").length;
+  const sa=(data||[]).filter(r=>r.tipo_marcacion==="SALIDA").length;
+  $("kEntrada").textContent=String(en); $("kSalida").textContent=String(sa); $("kUpd").textContent=new Date().toLocaleTimeString("es-CL");
+}
+
+async function iniciarTurno(){
+  const sess=readSession(); if(!sess){logout();return;}
+  const now=new Date(); const exp=new Date(now.getTime()+2*3600000).toISOString();
+  const payload={campus:$("campus").value,lugar:($("lugar").value||"").trim()||null,admin_correo:sess.rut,token_actual:randToken(),token_expira_en:exp};
+  const {data,error}=await db.from("turnos_admin").insert(payload).select().single();
+  if(error){msg($("turnoMsg"),"No se pudo iniciar turno: "+error.message,"crimson");return;}
+  activeTurno=data; msg($("turnoMsg"),"Turno activo generado correctamente.","#166534"); renderTurno(data);
+}
+
+async function finalizarTurno(){
+  if(!activeTurno?.id){msg($("turnoMsg"),"No hay turno activo.","crimson");return;}
+  const {data:marks}=await db.from("marcaciones_admin").select("tipo_marcacion").eq("turno_id",activeTurno.id);
+  const hasSalida=(marks||[]).some(m=>m.tipo_marcacion==="SALIDA");
+  if(!hasSalida){
+    await db.from("marcaciones_admin").insert({turno_id:activeTurno.id,admin_correo:activeTurno.admin_correo,tipo_marcacion:"SALIDA"});
+  }
+  await db.from("turnos_admin").update({termino_en:new Date().toISOString()}).eq("id",activeTurno.id).is("termino_en",null);
+  activeTurno.termino_en=new Date().toISOString();
+  $("turnoEstado").textContent="Turno cerrado";
+  msg($("turnoMsg"),"Turno finalizado.","#166534");
+  await refreshMarcaciones();
+}
+
+$("btnLogin").addEventListener("click",doLogin);
+$("btnLogout").addEventListener("click",logout);
+$("btnStart").addEventListener("click",iniciarTurno);
+$("btnFinish").addEventListener("click",finalizarTurno);
+$("loginPass").addEventListener("keydown",(e)=>{if(e.key==="Enter") doLogin();});
+
+const s=readSession();
+if(s){$("sessionInfo").textContent=`Sesión: ${s.rut}`;loginPanel.style.display="none";adminPanel.style.display="block";restoreTurno();}
+</script>
+</body>
+</html>

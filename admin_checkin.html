@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CIAC · Marcación Administrativa</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#EAF2FB;--card:#fff;--primary:#F06C6C;--primarySoft:#F4A6A6;--text:#111827;--muted:#6B7280;--radius:18px}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--text);background:var(--bg)}
+.wrap{max-width:680px;margin:40px auto;padding:16px}.card{background:var(--card);border:1px solid rgba(17,24,39,.06);border-radius:var(--radius);padding:20px;box-shadow:0 18px 40px rgba(17,24,39,.1)}
+h1{font-family:Fraunces,serif;margin:0 0 8px}p{color:var(--muted);font-size:14px}.msg{margin-top:12px;padding:10px;border-radius:14px;background:rgba(234,242,251,.35);border:1px dashed rgba(17,24,39,.1);min-height:18px}
+.btn{margin-top:12px;width:100%;padding:14px;border:0;border-radius:14px;font-weight:900;cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primarySoft));color:#fff}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.kv{font-size:12px;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+<h1>Marcación de jornada</h1>
+<p>Este enlace registra ENTRADA y luego SALIDA del turno administrativo.</p>
+<div class="kv" id="turnoInfo">Turno: validando...</div>
+<button id="btnMark" class="btn" disabled>Registrar marcación</button>
+<div id="msg" class="msg">Validando token...</div>
+</div></div>
+<script>
+const SUPABASE_URL="https://eepukfxexzawbvlroihd.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcHVrZnhleHphd2J2bHJvaWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NjMyMDYsImV4cCI6MjA4ODAzOTIwNn0.CPa6FeVD8CbkhQtkPF2KoJeFRIyNfuMTv8TR2cWpzC0";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const token=new URLSearchParams(location.search).get("token")||"";
+const btn=document.getElementById("btnMark");
+const msg=document.getElementById("msg");
+const info=document.getElementById("turnoInfo");
+let turno=null,locked=false;
+function setMsg(t,c){msg.textContent=t;msg.style.color=c||"#111827";}
+
+async function loadTurno(){
+  if(!token){setMsg("Token inválido.","crimson");return;}
+  const {data,error}=await db.from("turnos_admin").select("*").eq("token_actual",token).limit(1);
+  if(error||!data||!data.length){setMsg("Turno no encontrado.","crimson");return;}
+  const t=data[0];
+  if(t.termino_en){setMsg("Turno ya cerrado.","crimson");info.textContent=`Admin: ${t.admin_correo}`;return;}
+  const exp=Date.parse(t.token_expira_en||"");
+  if(!exp||Date.now()>exp){setMsg("Token expirado.","crimson");return;}
+  turno=t;
+  info.textContent=`Admin: ${t.admin_correo} · Campus: ${t.campus||"—"}`;
+  setMsg("Listo para registrar.");
+  btn.disabled=false;
+}
+
+async function registrar(){
+  if(!turno||locked) return;
+  locked=true;btn.disabled=true;setMsg("Registrando...");
+  const {data,error}=await db.from("marcaciones_admin").select("tipo_marcacion").eq("turno_id",turno.id).order("created_at",{ascending:true});
+  if(error){setMsg("Error al validar marcaciones.","crimson");locked=false;btn.disabled=false;return;}
+  const marks=data||[];
+  const hasEntrada=marks.some(m=>m.tipo_marcacion==="ENTRADA");
+  const hasSalida=marks.some(m=>m.tipo_marcacion==="SALIDA");
+
+  if(hasSalida){setMsg("Turno ya cerrado.","crimson");return;}
+
+  if(!hasEntrada){
+    const r=await db.from("marcaciones_admin").insert({turno_id:turno.id,admin_correo:turno.admin_correo,tipo_marcacion:"ENTRADA"});
+    if(r.error){setMsg("No se pudo registrar ENTRADA.","crimson");locked=false;btn.disabled=false;return;}
+    setMsg("ENTRADA registrada correctamente.","#166534");
+    locked=false;btn.disabled=false;return;
+  }
+
+  const r2=await db.from("marcaciones_admin").insert({turno_id:turno.id,admin_correo:turno.admin_correo,tipo_marcacion:"SALIDA"});
+  if(r2.error){setMsg("No se pudo registrar SALIDA.","crimson");locked=false;btn.disabled=false;return;}
+  await db.from("turnos_admin").update({termino_en:new Date().toISOString()}).eq("id",turno.id).is("termino_en",null);
+  setMsg("SALIDA registrada. Turno cerrado.","#166534");
+}
+
+btn.addEventListener("click",registrar);
+loadTurno();
+</script>
+</body>
+</html>
