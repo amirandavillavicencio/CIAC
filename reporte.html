@@ -40,6 +40,11 @@ input,select{padding:12px;border:1px solid rgba(17,24,39,.10);border-radius:14px
 .quickChip{padding:8px 10px;border-radius:999px;border:1px solid rgba(94,134,199,.18);background:#fff;color:var(--text);font-size:12px;font-weight:800;cursor:pointer}
 .quickChip.active{background:rgba(94,134,199,.14)}
 .pill{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid var(--line);background:#f9fafb}
+.viewTabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+.viewTab{padding:10px 12px;border-radius:12px;border:1px solid rgba(94,134,199,.2);background:rgba(94,134,199,.1);font-weight:800;cursor:pointer}
+.viewTab.active{background:linear-gradient(135deg,var(--primary),var(--primarySoft));color:#fff;border-color:transparent}
+.adminGrid{display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start}
+@media (max-width:900px){.adminGrid{grid-template-columns:1fr}}
 
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .kpi{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}
@@ -112,8 +117,12 @@ td .muted{font-size:11px}
     <div class="card" style="margin-bottom:16px;background:rgba(255,255,255,0.55);"><h1 style="font-family:Fraunces,serif;font-size:34px;line-height:1.05;margin:0;">Reporte de Mentorías</h1><p class="sub" style="font-size:14px;margin-top:8px;">Filtra sesiones, analiza tendencias y exporta resultados.</p></div>
     <h1 style="display:none;">Reporte de Mentorías</h1>
     <div class="sub" id="metaLine">Cargando…</div>
+    <div class="viewTabs">
+      <button id="tabTutorias" class="viewTab active" type="button">Tutorías</button>
+      <button id="tabAdmin" class="viewTab" type="button">Administrativo</button>
+    </div>
 
-    <div class="grid">
+    <div id="tutoriasView" class="grid">
       <div class="filters">
         <div class="pill" id="genAt">Generado: --</div>
 
@@ -290,6 +299,45 @@ td .muted{font-size:11px}
         <div class="footer">© Universidad Técnica Federico Santa María · CIAC</div>
       </div>
     </div>
+
+    <div id="administrativoView" style="display:none;">
+      <div class="adminGrid">
+        <div class="filters">
+          <div class="pill">Vista administrativa</div>
+          <label>Rango de fechas</label>
+          <div class="row">
+            <input id="adminDesde" class="small" type="date">
+            <input id="adminHasta" class="small" type="date">
+          </div>
+          <label>Campus</label>
+          <select id="adminCampus"><option value="">Todos</option></select>
+          <label>Administrador/a</label>
+          <input id="adminCorreo" placeholder="Ej: 21297045K">
+          <label>Estado</label>
+          <select id="adminEstado"><option value="">Todos</option><option value="activo">Activos</option><option value="cerrado">Cerrados</option></select>
+          <div class="btnrow">
+            <button class="btn" id="btnAdminFiltrar">Aplicar</button>
+            <button class="btn btnGhost" id="btnAdminLimpiar">Limpiar</button>
+            <button class="btn btnGood" id="btnAdminCSV">Descargar CSV</button>
+          </div>
+          <div class="muted" style="margin-top:10px;" id="adminStatus">—</div>
+        </div>
+        <div>
+          <div class="kpis">
+            <div class="kpi"><div class="k">Turnos totales</div><div class="v" id="aTot">0</div><div class="s">en el período</div></div>
+            <div class="kpi"><div class="k">Admins únicos</div><div class="v" id="aUni">0</div><div class="s">con turnos</div></div>
+            <div class="kpi"><div class="k">Horas totales</div><div class="v" id="aHoras">0</div><div class="s">turnos cerrados</div></div>
+            <div class="kpi"><div class="k">Turnos abiertos</div><div class="v" id="aOpen">0</div><div class="s">sin término</div></div>
+          </div>
+          <div class="tableWrap">
+            <table>
+              <thead><tr><th>Inicio</th><th>Admin</th><th>Campus</th><th>Lugar</th><th>Término</th><th>Duración</th><th>Estado</th></tr></thead>
+              <tbody id="adminRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -318,6 +366,24 @@ const passEl=document.getElementById("pass");
 const metaLine=document.getElementById("metaLine");
 const statusEl=document.getElementById("status");
 const genAtEl=document.getElementById("genAt");
+const tabTutorias=document.getElementById("tabTutorias");
+const tabAdmin=document.getElementById("tabAdmin");
+const tutoriasView=document.getElementById("tutoriasView");
+const administrativoView=document.getElementById("administrativoView");
+const adminDesdeEl=document.getElementById("adminDesde");
+const adminHastaEl=document.getElementById("adminHasta");
+const adminCampusEl=document.getElementById("adminCampus");
+const adminCorreoEl=document.getElementById("adminCorreo");
+const adminEstadoEl=document.getElementById("adminEstado");
+const adminRowsEl=document.getElementById("adminRows");
+const adminStatusEl=document.getElementById("adminStatus");
+const btnAdminFiltrar=document.getElementById("btnAdminFiltrar");
+const btnAdminLimpiar=document.getElementById("btnAdminLimpiar");
+const btnAdminCSV=document.getElementById("btnAdminCSV");
+const aTot=document.getElementById("aTot");
+const aUni=document.getElementById("aUni");
+const aHoras=document.getElementById("aHoras");
+const aOpen=document.getElementById("aOpen");
 
 const quickDateEl=document.getElementById("quickDate");
 const quickChipsEl=document.getElementById("quickChips");
@@ -360,16 +426,70 @@ const noTipo=document.getElementById("noTipo");
 const noTutor=document.getElementById("noTutor");
 const noHeat=document.getElementById("noHeat");
 
+let ACTIVE_VIEW="tutorias";
+let LAST_ADMIN_ROWS=[];
 let LAST_ROWS=[];
 let LAST_SESIONES_RAW=[];
 let COUNTS_BY_ID=new Map();
 let OPEN_DETAIL_SESSION=null;
 let LAST_PARTICIPANTES=[];
 
+
+function setActiveView(view){
+  ACTIVE_VIEW=view;
+  const tutor=view==="tutorias";
+  tutoriasView.style.display=tutor?"grid":"none";
+  administrativoView.style.display=tutor?"none":"block";
+  tabTutorias.classList.toggle("active",tutor);
+  tabAdmin.classList.toggle("active",!tutor);
+  if(!tutor && LAST_ADMIN_ROWS.length===0){ cargarAdmin(); }
+}
+
+function setAdminStatus(t,isErr=false){ if(!adminStatusEl) return; adminStatusEl.style.color=isErr?"crimson":""; adminStatusEl.textContent=t; }
+function adminDurMin(r){ const m=minutesBetween(r.created_at,r.termino_en); return m===null?null:m; }
+function updateAdminKPIs(rows){
+  const uniq=new Set(); let mins=0; let open=0;
+  for(const r of rows){ if(r.admin_correo) uniq.add(r.admin_correo); const d=adminDurMin(r); if(d!==null) mins+=d; if(!r.termino_en) open++; }
+  aTot.textContent=String(rows.length); aUni.textContent=String(uniq.size); aHoras.textContent=(mins/60).toFixed(1); aOpen.textContent=String(open);
+}
+function renderAdminRows(rows){
+  adminRowsEl.innerHTML="";
+  if(!rows.length){ adminRowsEl.innerHTML='<tr><td colspan="7" class="muted">Sin resultados</td></tr>'; return; }
+  for(const r of rows){
+    const dur=adminDurMin(r);
+    const estado=r.termino_en?'<span class="badgeOk">Cerrado</span>':'<span class="badgeWarn">Activo</span>';
+    adminRowsEl.innerHTML += `<tr><td>${fmtDT(r.created_at)}</td><td>${r.admin_correo||""}</td><td>${r.campus||""}</td><td>${r.lugar||""}</td><td>${fmtDT(r.termino_en)}</td><td>${dur===null?"—":dur+" min"}</td><td>${estado}</td></tr>`;
+  }
+}
+function exportAdminCSV(){
+  const today=ymdToday();
+  const rows=(LAST_ADMIN_ROWS||[]).map(r=>{ const d=adminDurMin(r); return [r.admin_correo||"",r.campus||"",r.lugar||"",r.created_at||"",r.termino_en||"",d===null?"":d,r.termino_en?"cerrado":"activo"]; });
+  downloadCSVFile(`ciac_admin_turnos_${today}.csv`,["admin_correo","campus","lugar","inicio","termino","duracion_min","estado"],rows,(csvSepEl?.value||";"));
+}
+async function loadAdminCampusOptions(){
+  const {data}=await db.from("turnos_admin").select("campus").order("created_at",{ascending:false}).limit(2000);
+  const set=new Set((data||[]).map(r=>r.campus).filter(Boolean));
+  adminCampusEl.innerHTML='<option value="">Todos</option>';
+  Array.from(set).sort().forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;adminCampusEl.appendChild(o);});
+}
+async function cargarAdmin(){
+  setAdminStatus("Cargando...");
+  let q=db.from("turnos_admin").select("id,created_at,campus,lugar,admin_correo,termino_en").order("created_at",{ascending:false}).limit(2000);
+  const d=adminDesdeEl.value, h=adminHastaEl.value, c=adminCampusEl.value, co=(adminCorreoEl.value||"").trim(), e=adminEstadoEl.value;
+  if(d) q=q.gte("created_at",toISODateStart(d)); if(h) q=q.lte("created_at",toISODateEnd(h)); if(c) q=q.eq("campus",c); if(co) q=q.ilike("admin_correo",`%${co}%`); if(e==="activo") q=q.is("termino_en",null); if(e==="cerrado") q=q.not("termino_en","is",null);
+  const {data,error}=await q;
+  if(error){setAdminStatus("Error: "+error.message,true);return;}
+  LAST_ADMIN_ROWS=data||[]; renderAdminRows(LAST_ADMIN_ROWS); updateAdminKPIs(LAST_ADMIN_ROWS); setAdminStatus(`Registros: ${LAST_ADMIN_ROWS.length}`);
+}
+
 function unlock(){
   lock.style.display="none";
   app.style.display="block";
   initDefaults();
+  adminDesdeEl.value=desdeEl.value;
+  adminHastaEl.value=hastaEl.value;
+  loadAdminCampusOptions();
+  setActiveView("tutorias");
   boot();
 }
 
@@ -1260,7 +1380,8 @@ btnCSVSession.onclick=async ()=>{
 btnCSV.onclick=async ()=>{
   btnCSV.disabled=true;
   try{
-    exportGeneralCSV();
+    if(ACTIVE_VIEW==="administrativo") exportAdminCSV();
+    else exportGeneralCSV();
   }finally{
     btnCSV.disabled=false;
   }
@@ -1314,6 +1435,12 @@ function resizeCharts(){
   fit(chartTutor);
 }
 window.addEventListener("resize", ()=>{ try{ resizeCharts(); }catch(_){} });
+
+if(tabTutorias) tabTutorias.onclick=()=>setActiveView("tutorias");
+if(tabAdmin) tabAdmin.onclick=()=>setActiveView("administrativo");
+if(btnAdminFiltrar) btnAdminFiltrar.onclick=()=>cargarAdmin();
+if(btnAdminCSV) btnAdminCSV.onclick=()=>exportAdminCSV();
+if(btnAdminLimpiar) btnAdminLimpiar.onclick=async ()=>{ adminCorreoEl.value=""; adminCampusEl.value=""; adminEstadoEl.value=""; adminDesdeEl.value=desdeEl.value; adminHastaEl.value=hastaEl.value; await cargarAdmin(); };
 </script>
 
 </body>
