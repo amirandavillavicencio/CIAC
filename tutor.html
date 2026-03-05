@@ -386,6 +386,27 @@ input:focus, select:focus{
   color: var(--success);
 }
 
+.liveList{
+  margin-top: 12px;
+  border: 1px solid rgba(17,24,39,0.08);
+  border-radius: 14px;
+  background: rgba(234,242,251,0.35);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+.liveItem{
+  display:grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border:1px solid rgba(17,24,39,0.08);
+  background:#fff;
+}
+.liveItemName{font-size:13px;font-weight:800}
+.liveItemMail,.liveItemHour{font-size:12px;color:var(--muted)}
+
 .summary{
   display:none; /* JS la controla con summaryBox.style.display */
 }
@@ -678,6 +699,10 @@ input:focus, select:focus{
                 <div class="liveLine">
                   <span class="badge">Asistencias: <b id="liveCount">0</b></span>
                 </div>
+
+                <div class="liveList" id="liveList" aria-live="polite">
+                  <div class="muted">Aún no hay registros</div>
+                </div>
               </div>
             </div>
 
@@ -893,6 +918,7 @@ const inToken = document.getElementById("inToken");
 const inLink = document.getElementById("inLink");
 const inTimer = document.getElementById("inTimer");
 const liveCountEl = document.getElementById("liveCount");
+const liveListEl = document.getElementById("liveList");
 
 // Resumen
 const summaryBox = document.getElementById("summary");
@@ -944,6 +970,14 @@ function renderIn(url){
   qrIn.src = qrUrl(url, 190);
   inLink.href = url;
   inLink.textContent = url;
+}
+function escapeHtml(text){
+  return String(text ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function saveActiveToLS(payload){
@@ -997,6 +1031,7 @@ function resetUIForNew(){
   inLink.href = "#";
   inTimer.textContent = "Token activo mientras la sesión esté abierta.";
   liveCountEl.textContent = "0";
+  if (liveListEl) liveListEl.innerHTML = '<div class="muted">Aún no hay registros</div>';
   if (sumParticipantes) sumParticipantes.textContent = "0";
 }
 
@@ -1011,15 +1046,40 @@ async function refreshLiveCount(){
   if (!sessionId || closed) return;
 
   try{
-    const { count, error } = await db
+    const [countResp, listResp] = await Promise.all([
+      db
       .from("asistencias_v2")
       .select("sesion_id", { count: "exact", head: true })
-      .eq("sesion_id", sessionId);
+      .eq("sesion_id", sessionId),
+      db
+      .from("asistencias_v2")
+      .select("nombre_completo, correo_alumno, created_at")
+      .eq("sesion_id", sessionId)
+      .order("created_at", { ascending: false })
+      .limit(20)
+    ]);
+
+    const { count, error } = countResp;
 
     if (error) {
       console.error("[CIAC] LiveCount ERROR", error);
       return;
     }
+
+    if (!listResp.error && liveListEl) {
+      const rows = listResp.data || [];
+      if (!rows.length) {
+        liveListEl.innerHTML = '<div class="muted">Aún no hay registros</div>';
+      } else {
+        liveListEl.innerHTML = rows.map((r)=>{
+          const nombre = r.nombre_completo || "Sin nombre";
+          const correo = r.correo_alumno || "Sin correo";
+          const hora = r.created_at ? new Date(r.created_at).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "--:--:--";
+          return `<div class="liveItem"><div class="liveItemName">${escapeHtml(nombre)}</div><div class="liveItemHour">${hora}</div><div class="liveItemMail">${escapeHtml(correo)}</div></div>`;
+        }).join("");
+      }
+    }
+
     liveCountEl.textContent = String(count ?? 0);
   }catch(err){
     console.error("[CIAC] LiveCount ERROR", err);
