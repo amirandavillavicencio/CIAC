@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>CIAC · Tutor</title>
+<link rel="icon" href="data:,">
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -68,7 +69,10 @@ body{
   width: 34px;
   height: 34px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(94,134,199,0.95), rgba(240,108,108,0.95));
+  object-fit: contain;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid rgba(17,24,39,0.10);
   box-shadow: 0 10px 24px rgba(17,24,39,0.12);
 }
 
@@ -484,7 +488,7 @@ input:focus, select:focus{
   <div class="topbar">
     <div class="topbarInner">
       <div class="brand">
-        <div class="brandMark" aria-hidden="true"></div>
+        <img src="logonuevociac.png" alt="Logo CIAC" class="brandMark" />
         <div class="brandText">
           <div class="t">CIAC</div>
           <div class="s">Tutor · Control de sesión</div>

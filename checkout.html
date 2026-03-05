@@ -4,51 +4,29 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CIAC Check-In · Marcar salida</title>
-
   <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
   <style>
-    :root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; --muted:#6b7280; --line:#e5e7eb; }
-    body{ margin:0; font-family:Arial, sans-serif; background:var(--bg); color:#111827; }
-    .topbar{ background:var(--blue); color:#fff; padding:16px 22px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    .brand{ font-weight:900; letter-spacing:.2px; }
-    a{ color:#fff; text-decoration:none; font-weight:900; }
-    .wrap{ max-width:440px; margin:22px auto; padding:0 14px; }
-    .card{ background:var(--card); border-radius:14px; box-shadow:0 8px 20px rgba(0,0,0,.08); border:1px solid var(--line); padding:18px; }
-    h1{ margin:0 0 6px; font-size:18px; }
-    .sub{ margin:0 0 14px; color:var(--muted); font-size:13px; line-height:1.35; }
-    label{ display:block; font-size:12px; color:var(--muted); margin-top:10px; }
-    input{ width:100%; padding:10px; margin-top:4px; border-radius:10px; border:1px solid #d1d5db; box-sizing:border-box; background:#fff; }
-    button{ width:100%; margin-top:14px; padding:11px; border-radius:10px; border:0; background:var(--blue); color:#fff; font-weight:900; cursor:pointer; }
-    button:disabled{ opacity:.55; cursor:not-allowed; }
-    .msg{ margin-top:10px; font-size:13px; min-height:18px; }
-    .hint{ margin-top:12px; background:#ecfeff; border:1px solid #a5f3fc; padding:12px; border-radius:12px; font-size:12px; color:#0f172a; line-height:1.35; }
+    :root{--bg:#EAF2FB;--card:#FFFFFF;--primary:#F06C6C;--primarySoft:#F4A6A6;--blue:#5E86C7;--success:#4FBF9E;--text:#111827;--muted:#6B7280;--line: rgba(17,24,39,0.10);--shadow: 0 18px 40px rgba(17,24,39,0.10);--radius: 18px;}
+    *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:radial-gradient(1200px 600px at 10% 0%, rgba(94,134,199,.18), rgba(234,242,251,0) 60%),radial-gradient(900px 500px at 90% 10%, rgba(240,108,108,.18), rgba(234,242,251,0) 55%),var(--bg);color:var(--text)}
+    .topbar{position:sticky;top:0;background:rgba(255,255,255,.72);backdrop-filter:blur(10px);border-bottom:1px solid rgba(17,24,39,.06)}
+    .topbarInner{max-width:1040px;margin:0 auto;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}.brand{font-family:Fraunces,serif}
+    .topbar a{text-decoration:none;color:var(--text);font-weight:800;background:rgba(94,134,199,.10);border:1px solid rgba(94,134,199,.18);padding:10px 12px;border-radius:14px}
+    .page{max-width:1040px;margin:0 auto;padding:18px 16px 32px}.hero,.card{max-width:600px;margin:0 auto;background:#fff;border:1px solid rgba(17,24,39,.06);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+    .card{margin-top:16px}h1{margin:0;font-family:Fraunces,serif;font-size:32px}.sub{margin:8px 0 0;color:var(--muted)}
+    label{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-top:10px}
+    input{width:100%;margin-top:6px;padding:14px;border-radius:14px;border:1px solid rgba(17,24,39,.10);background:rgba(234,242,251,.35)}
+    button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:14px;font-weight:900;color:#fff;background:linear-gradient(135deg,var(--primary),var(--primarySoft));cursor:pointer}
+    .msg{margin-top:12px;font-size:13px;min-height:18px;padding:10px 12px;border-radius:14px;background:rgba(234,242,251,.35);border:1px dashed rgba(17,24,39,.10)}
+    .hint{margin-top:12px;background:rgba(94,134,199,.10);border:1px solid rgba(94,134,199,.18);padding:12px;border-radius:14px;font-size:12px}
   </style>
 </head>
-
 <body>
-  <div class="topbar">
-    <div class="brand">CIAC Check-In · Salida</div>
-    <a href="index.html">🏠 Inicio</a>
-  </div>
-
-  <div class="wrap">
-    <div class="card">
-      <h1>Marcar salida</h1>
-      <p class="sub">Escanea el QR de salida en sala. Válido por 90 segundos.</p>
-
-      <label>Token de salida (si no viene por QR)</label>
-      <input id="token" placeholder="(se completa automáticamente)" />
-
-      <button id="btn">Confirmar salida</button>
-      <div class="msg" id="msg"></div>
-
-      <div class="hint">
-        Importante: debes marcar salida desde el <b>mismo dispositivo</b> con que marcaste entrada.
-      </div>
-    </div>
-  </div>
+  <div class="topbar"><div class="topbarInner"><div class="brand">CIAC · Registro de salida</div><a href="index.html">Inicio</a></div></div>
+  <main class="page"><section class="hero"><h1>Confirmar salida</h1><p class="sub">Escanea el QR de salida en sala. Válido por 90 segundos.</p></section><section class="card"><label>Token de salida (si no viene por QR)</label><input id="token" placeholder="(se completa automáticamente)" /><button id="btn">Confirmar salida</button><div class="msg" id="msg"></div><div class="hint">Importante: debes marcar salida desde el <b>mismo dispositivo</b> con que marcaste entrada.</div></section></main>
 
 <script>
 const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";

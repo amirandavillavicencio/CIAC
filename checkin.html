@@ -4,76 +4,52 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CIAC Check-In · Marcar asistencia</title>
-
   <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
-    :root { --blue:#1f4a8d; --bg:#f4f6f8; --card:#fff; --muted:#6b7280; --line:#e5e7eb; }
-    body{ margin:0; font-family:Arial, sans-serif; background:var(--bg); color:#111827; }
-    .topbar{ background:var(--blue); color:#fff; padding:16px 22px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    .brand{ font-weight:900; letter-spacing:.2px; }
-    a{ color:#fff; text-decoration:none; font-weight:900; }
-    .wrap{ max-width:440px; margin:22px auto; padding:0 14px; }
-    .card{ background:var(--card); border-radius:14px; box-shadow:0 8px 20px rgba(0,0,0,.08); border:1px solid var(--line); padding:18px; }
-    h1{ margin:0 0 6px; font-size:18px; }
-    .sub{ margin:0 0 14px; color:var(--muted); font-size:13px; line-height:1.35; }
-    label{ display:block; font-size:12px; color:var(--muted); margin-top:10px; }
-    input{ width:100%; padding:10px; margin-top:4px; border-radius:10px; border:1px solid #d1d5db; box-sizing:border-box; background:#fff; }
-    button{ width:100%; margin-top:14px; padding:11px; border-radius:10px; border:0; background:var(--blue); color:#fff; font-weight:900; cursor:pointer; }
-    button:disabled{ opacity:.55; cursor:not-allowed; }
-    .msg{ margin-top:10px; font-size:13px; min-height:18px; }
-    .hint{ margin-top:12px; background:#ecfeff; border:1px solid #a5f3fc; padding:12px; border-radius:12px; font-size:12px; color:#0f172a; line-height:1.35; }
-    .hide{ display:none; }
-
-    /* Imagen hero (mínimo, responsivo, sin alterar el estilo base) */
-    .heroImg{
-  width:100%;
-  max-height:160px;
-  object-fit:cover;
-  display:block;
-  border-radius:12px;
-  border:1px solid var(--line);
-  margin:10px 0 12px;
-  background:#fff;
-}
+    :root{--bg:#EAF2FB;--card:#FFFFFF;--primary:#F06C6C;--primarySoft:#F4A6A6;--blue:#5E86C7;--success:#4FBF9E;--text:#111827;--muted:#6B7280;--line: rgba(17,24,39,0.10);--shadow: 0 18px 40px rgba(17,24,39,0.10);--radius: 18px;}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,sans-serif;background:radial-gradient(1200px 600px at 10% 0%, rgba(94,134,199,.18), rgba(234,242,251,0) 60%),radial-gradient(900px 500px at 90% 10%, rgba(240,108,108,.18), rgba(234,242,251,0) 55%),var(--bg);color:var(--text)}
+    .topbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.72);backdrop-filter:blur(10px);border-bottom:1px solid rgba(17,24,39,.06)}
+    .topbarInner{max-width:1040px;margin:0 auto;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+    .brand{display:flex;align-items:center;gap:10px}.brand img{width:34px;height:34px;border-radius:12px;background:#fff;padding:4px;border:1px solid rgba(17,24,39,.08)}
+    .brand .t{font-family:Fraunces,serif}.brand .s{font-size:12px;color:var(--muted);font-weight:600}
+    .topbar a{text-decoration:none;color:var(--text);font-weight:800;background:rgba(94,134,199,.10);border:1px solid rgba(94,134,199,.18);padding:10px 12px;border-radius:14px}
+    .page{max-width:1040px;margin:0 auto;padding:18px 16px 32px}
+    .hero,.card{background:var(--card);border:1px solid rgba(17,24,39,.06);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .hero{padding:18px;max-width:600px;margin:0 auto}
+    .hero h1{margin:0;font-family:Fraunces,serif;font-size:32px;line-height:1.08}
+    .hero p{margin:8px 0 0;color:var(--muted);font-size:14px}
+    .card{max-width:600px;margin:16px auto 0;padding:18px}
+    label{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-top:10px}
+    input{width:100%;margin-top:6px;padding:14px;border-radius:14px;border:1px solid rgba(17,24,39,.10);background:rgba(234,242,251,.35)}
+    input:focus{outline:none;border-color:rgba(94,134,199,.55);box-shadow:0 0 0 4px rgba(94,134,199,.14);background:#fff}
+    button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:14px;font-weight:900;cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--primary),var(--primarySoft));box-shadow:0 14px 30px rgba(240,108,108,.22)}
+    .msg,.msgAlert{margin-top:12px;font-size:13px;min-height:18px;padding:10px 12px;border-radius:14px;background:rgba(234,242,251,.35);border:1px dashed rgba(17,24,39,.10)}
+    .hint{margin-top:12px;padding:12px;border-radius:14px;background:rgba(94,134,199,.10);border:1px solid rgba(94,134,199,.18);font-size:12px;color:var(--text)}
+    .hide{display:none}.heroImg{width:100%;max-height:180px;object-fit:cover;border-radius:14px;border:1px solid rgba(17,24,39,.06);margin:10px 0 12px;background:#fff}
   </style>
 </head>
-
 <body>
-  <div class="topbar">
-    <div class="brand">CIAC Check-In · Asistencia</div>
-    <a href="index.html">🏠 Inicio</a>
-  </div>
-
-  <div class="wrap">
-    <div class="card">
-      <h1>Marcar asistencia</h1>
-      <p class="sub">Escanea el QR en sala. Luego completa tus datos.</p>
-
-      <!-- HERO: imagen en la raíz junto a checkin.html -->
+  <div class="topbar"><div class="topbarInner"><div class="brand"><img src="logonuevociac.png" alt="Logo"><div><div class="t">CIAC</div><div class="s">Check-in estudiantes</div></div></div><a href="index.html">Inicio</a></div></div>
+  <main class="page">
+    <section class="hero"><h1>Registro de asistencia</h1><p>Escanea el QR en sala y completa tus datos para confirmar tu participación.</p></section>
+    <section class="card">
       <img class="heroImg" src="hero-alumno.png" alt="CIAC · Check-in de asistencia" loading="lazy" />
-
       <label>Nombre y apellido</label>
       <input id="nombre" placeholder="Ej: Nombre Apellido" autocomplete="name" />
-
       <label>Correo institucional</label>
       <input id="correo" type="email" placeholder="nombre@usm.cl" autocomplete="email" inputmode="email" />
-
-      <!-- Token: se autocompleta por QR; lo dejamos por si alguien lo pega manual -->
-      <div id="tokenWrap">
-        <label>Token</label>
-        <input id="token" placeholder="(se completa automáticamente)" />
-      </div>
-
+      <div id="tokenWrap"><label>Token</label><input id="token" placeholder="(se completa automáticamente)" /></div>
       <button id="btn">Registrar</button>
       <div class="msg" id="msg"></div>
-
-      <div class="hint">
-        Puedes registrar desde un celular compartido. Se permite <b>1 registro por correo</b> en cada sesión.
-      </div>
-    </div>
-  </div>
+      <div class="hint">Puedes registrar desde un celular compartido. Se permite <b>1 registro por correo</b> en cada sesión.</div>
+    </section>
+  </main>
 
 <script>
 const SUPABASE_URL = "https://eepukfxexzawbvlroihd.supabase.co";
